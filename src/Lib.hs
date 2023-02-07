@@ -7,6 +7,7 @@ import Control.Monad.Writer.CPS
 import Data.Function
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import qualified Data.Vector as V
 import System.Random.MWC
 
 data Item
@@ -49,8 +50,11 @@ data GColor
   | GGold
   deriving (Show, Eq, Ord)
 
-specialBreads = [Croissant, Flatbread, StuffedFlatbread, Sandwich, FrenchBread]
-rareBreads = [Doughnut, Bagel, Waffle]
+specialBreads :: V.Vector Bread
+specialBreads = V.fromList [Croissant, Flatbread, StuffedFlatbread, Sandwich, FrenchBread]
+
+rareBreads :: V.Vector Bread
+rareBreads = V.fromList [Doughnut, Bagel, Waffle]
 
 data Account = Account
   { dailyRoll :: Int
@@ -112,10 +116,10 @@ getRollCount g Account {dailyRoll} =
 testAccount :: Account
 testAccount =
   Account
-    { loafConverter = 256
-    , dailyRoll = 1200
+    { loafConverter = 7
+    , dailyRoll = 192
     , recipeRefinement = False
-    , moakBooster = 0
+    , moakBooster = 1
     , chessPieceEqualizer = 1
     , etherealShine = 1
     , inventory = M.singleton (Shadow ShadowGemGold) 20
@@ -202,22 +206,27 @@ oneRoll
         rare <- uniformR @Int (1, 512) g
         when (rare <= luck) do
           i <- uniformR (0, length rareBreads - 1) g
-          k (Bread $ rareBreads !! i, 10)
+          k (Bread $ rareBreads V.! i, 10)
         -- Special breads
         spec <- uniformR @Int (1, 128) g
         when (spec <= luck) do
           i <- uniformR (0, length specialBreads - 1) g
-          k (Bread $ specialBreads !! i, 5)
+          k (Bread $ specialBreads V.! i, 5)
         pure (Bread Loaf, 1)
 
 breadRoll g a@Account {prestigeLevel} = do
   n <- getRollCount g a
   (items, rewards) <- unzip <$> replicateM n (oneRoll g a)
-  pure (items, round @Double @Int $ fromIntegral (sum rewards) * (1 + 0.1 * fromIntegral prestigeLevel))
+  pure
+    ( items
+    , round @Double @Int $ fromIntegral (sum rewards) * (1 + 0.1 * fromIntegral prestigeLevel)
+    )
 
 main :: IO ()
 main = do
   g <- createSystemRandom
-  replicateM_ 100 do
-    xs <- breadRoll g testAccount
-    print xs
+  let cnt = 1_000_000
+  xs <- replicateM cnt do
+    (_, r) <- breadRoll g testAccount
+    pure r
+  print @Double (fromIntegral (sum xs) / fromIntegral cnt)

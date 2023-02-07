@@ -61,6 +61,7 @@ library:
     - mwc-random
     - mtl
     - writer-cps-mtl
+    - vector
 
 executables:
   demo:
