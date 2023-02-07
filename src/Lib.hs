@@ -3,6 +3,7 @@ module Lib (
 ) where
 
 import Control.Monad.Cont
+import Control.Monad.Writer.CPS
 import Data.Function
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -59,6 +60,8 @@ data Account = Account
   , chessPieceEqualizer :: Int
   , etherealShine :: Int
   , inventory :: M.Map Item Int
+  , prestigeLevel :: Int
+  , gambitShop :: M.Map Item Int
   }
 
 {-
@@ -116,9 +119,17 @@ testAccount =
     , chessPieceEqualizer = 1
     , etherealShine = 1
     , inventory = M.singleton (Shadow ShadowGemGold) 20
+    , prestigeLevel = 2
+    , gambitShop =
+        M.fromList
+          [ (Bread Flatbread, 2)
+          , (Bread StuffedFlatbread, 2)
+          , (Bread Sandwich, 2)
+          , (Bread FrenchBread, 2)
+          ]
     }
 
-oneRoll :: GenIO -> Account -> IO Item
+oneRoll :: GenIO -> Account -> IO (Item, Int)
 oneRoll
   g
   Account
@@ -129,18 +140,24 @@ oneRoll
     , recipeRefinement
     , etherealShine
     , inventory
+    , gambitShop
     } =
     runContT (callCC _roll) pure
     where
       applyLuckBoost flag base = if flag then 4 * (base - 1) + 1 else base
       _roll k = do
+        (item, val) <- _rollBasic k
+        let extra = fromMaybe 0 $ gambitShop M.!? item
+        pure (item, val + extra)
+      _rollBasic k = do
+        -- rolling without taking into account ascension and gambit_shop
         -- Moak
         do
           let moakRarityMult = round @Double $ fromIntegral dailyRoll / 10
               moakLuck = round @Double $ fromIntegral (loafConverter + 1) * (1.3 ^ moakBooster)
           moak <- uniformR @Int (1, 32768 * moakRarityMult) g
           when (moak <= moakLuck) do
-            k ManyOfAKind
+            k (ManyOfAKind, 2000 + dailyRoll * 10)
         do
           let countShadowGoldGem =
                 fromMaybe 0 $ inventory M.!? Shadow ShadowGemGold
@@ -149,16 +166,16 @@ oneRoll
                 applyLuckBoost recipeRefinement $ loafConverter + 1 + gemBoost
           -- Gems, individually
           forM_
-            [ (GGold, 4194304)
-            , (GGreen, 524288)
-            , (GPurple, 262144)
-            , (GBlue, 131072)
-            , (GRed, 65536)
+            [ (GGold, 4194304, 5000)
+            , (GGreen, 524288, 750)
+            , (GPurple, 262144, 500)
+            , (GBlue, 131072, 250)
+            , (GRed, 65536, 150)
             ]
-            \(c, hi) -> do
+            \(c, hi, reward) -> do
               gem <- uniformR @Int (1, hi) g
               when (gem <= gemLuck) do
-                k $ Gem c
+                k (Gem c, reward)
         let luck = applyLuckBoost recipeRefinement $ loafConverter + 1
         -- Chess pieces
         do
@@ -171,7 +188,7 @@ oneRoll
                 _ -> error $ "unknown cpe: " <> show chessPieceEqualizer
           when (cp <= luck) do
             cr <- uniformR @Double (0, 1) g
-            let color = if cr <= whiteChance then White else Black
+            let (color, reward) = if cr <= whiteChance then (White, 80) else (Black, 40)
             p <- uniformR @Int (0, 15) g
             let piece
                   | p <= 7 = Pawn
@@ -180,22 +197,23 @@ oneRoll
                   | p <= 13 = Rook
                   | p <= 14 = Queen
                   | otherwise = King
-            k $ ChessPiece color piece
+            k (ChessPiece color piece, reward)
         -- Rare breads
         rare <- uniformR @Int (1, 512) g
         when (rare <= luck) do
           i <- uniformR (0, length rareBreads - 1) g
-          k $ Bread $ rareBreads !! i
+          k (Bread $ rareBreads !! i, 10)
         -- Special breads
         spec <- uniformR @Int (1, 128) g
         when (spec <= luck) do
           i <- uniformR (0, length specialBreads - 1) g
-          k $ Bread $ specialBreads !! i
-        pure $ Bread Loaf
+          k (Bread $ specialBreads !! i, 5)
+        pure (Bread Loaf, 1)
 
-breadRoll g a = do
+breadRoll g a@Account {prestigeLevel} = do
   n <- getRollCount g a
-  replicateM n (oneRoll g a)
+  (items, rewards) <- unzip <$> replicateM n (oneRoll g a)
+  pure (items, round @Double @Int $ fromIntegral (sum rewards) * (1 + 0.1 * fromIntegral prestigeLevel))
 
 main :: IO ()
 main = do

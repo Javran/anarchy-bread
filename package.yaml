@@ -60,6 +60,7 @@ library:
     - text
     - mwc-random
     - mtl
+    - writer-cps-mtl
 
 executables:
   demo:
