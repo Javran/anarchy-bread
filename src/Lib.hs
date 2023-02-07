@@ -4,6 +4,8 @@ module Lib (
 
 import Control.Monad.Cont
 import Data.Function
+import qualified Data.Map.Strict as M
+import Data.Maybe
 import System.Random.MWC
 
 data Item
@@ -12,13 +14,13 @@ data Item
   | Gem GColor
   | ManyOfAKind
   | Shadow ShadowItem
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 data ShadowItem
-  = ShadowGoldGem
+  = ShadowOmega
   | ShadowGemGold
   | ShadowMoak
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 data Bread
   = Loaf
@@ -30,13 +32,13 @@ data Bread
   | Doughnut
   | Bagel
   | Waffle
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 data CColor = Black | White
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 data Piece = Pawn | Knight | Bishop | Rook | Queen | King
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 data GColor
   = GRed
@@ -44,7 +46,7 @@ data GColor
   | GPurple
   | GGreen
   | GGold
-  deriving (Show)
+  deriving (Show, Eq, Ord)
 
 specialBreads = [Croissant, Flatbread, StuffedFlatbread, Sandwich, FrenchBread]
 rareBreads = [Doughnut, Bagel, Waffle]
@@ -52,10 +54,11 @@ rareBreads = [Doughnut, Bagel, Waffle]
 data Account = Account
   { dailyRoll :: Int
   , loafConverter :: Int
-  , recipeRefinement :: Bool -- TODO
+  , recipeRefinement :: Bool
   , moakBooster :: Int
   , chessPieceEqualizer :: Int
-  , etherealShine :: Int -- TOOD
+  , etherealShine :: Int
+  , inventory :: M.Map Item Int
   }
 
 {-
@@ -112,6 +115,7 @@ testAccount =
     , moakBooster = 0
     , chessPieceEqualizer = 1
     , etherealShine = 1
+    , inventory = M.singleton (Shadow ShadowGemGold) 20
     }
 
 oneRoll :: GenIO -> Account -> IO Item
@@ -124,6 +128,7 @@ oneRoll
     , chessPieceEqualizer
     , recipeRefinement
     , etherealShine
+    , inventory
     } =
     runContT (callCC _roll) pure
     where
@@ -137,7 +142,8 @@ oneRoll
           when (moak <= moakLuck) do
             k ManyOfAKind
         do
-          let countShadowGoldGem = 20 -- TODO: read from inventory
+          let countShadowGoldGem =
+                fromMaybe 0 $ inventory M.!? Shadow ShadowGemGold
               gemBoost = min (etherealShine * 10) countShadowGoldGem
               gemLuck =
                 applyLuckBoost recipeRefinement $ loafConverter + 1 + gemBoost
