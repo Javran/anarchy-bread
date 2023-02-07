@@ -1,0 +1,8 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "anarchy-bread:lib"
+    - path: "./exe"
+      component: "anarchy-bread:exe:demo"
+    - path: "./test"
+      component: "anarchy-bread:test:hspec"
