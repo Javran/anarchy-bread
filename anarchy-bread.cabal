@@ -12,6 +12,7 @@ bug-reports:    https://github.com/Javran/anarchy-bread/issues
 author:         Javran Cheng
 maintainer:     javran.c@gmail.com
 license:        BSD3
+license-file:   LICENSE
 build-type:     Simple
 
 source-repository head
