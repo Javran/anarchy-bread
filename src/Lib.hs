@@ -4,69 +4,11 @@ module Lib (
 
 import Control.Monad.Cont
 import Control.Monad.Writer.CPS
-import Data.Function
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Vector as V
 import System.Random.MWC
-
-data Item
-  = Bread Bread
-  | ChessPiece CColor Piece
-  | Gem GColor
-  | ManyOfAKind
-  | Shadow ShadowItem
-  deriving (Show, Eq, Ord)
-
-data ShadowItem
-  = ShadowOmega
-  | ShadowGemGold
-  | ShadowMoak
-  deriving (Show, Eq, Ord)
-
-data Bread
-  = Loaf
-  | Croissant
-  | Flatbread
-  | StuffedFlatbread
-  | Sandwich
-  | FrenchBread
-  | Doughnut
-  | Bagel
-  | Waffle
-  deriving (Show, Eq, Ord)
-
-data CColor = Black | White
-  deriving (Show, Eq, Ord)
-
-data Piece = Pawn | Knight | Bishop | Rook | Queen | King
-  deriving (Show, Eq, Ord)
-
-data GColor
-  = GRed
-  | GBlue
-  | GPurple
-  | GGreen
-  | GGold
-  deriving (Show, Eq, Ord)
-
-specialBreads :: V.Vector Bread
-specialBreads = V.fromList [Croissant, Flatbread, StuffedFlatbread, Sandwich, FrenchBread]
-
-rareBreads :: V.Vector Bread
-rareBreads = V.fromList [Doughnut, Bagel, Waffle]
-
-data Account = Account
-  { dailyRoll :: Int
-  , loafConverter :: Int
-  , recipeRefinement :: Bool
-  , moakBooster :: Int
-  , chessPieceEqualizer :: Int
-  , etherealShine :: Int
-  , inventory :: M.Map Item Int
-  , prestigeLevel :: Int
-  , gambitShop :: M.Map Item Int
-  }
+import AnarchyBread.Types
 
 {-
   Regarding rolling one single item: it is done in the following order:
@@ -116,8 +58,8 @@ getRollCount g Account {dailyRoll} =
 testAccount :: Account
 testAccount =
   Account
-    { loafConverter = 7
-    , dailyRoll = 192
+    { loafConverter = 8
+    , dailyRoll = 318
     , recipeRefinement = False
     , moakBooster = 1
     , chessPieceEqualizer = 1
@@ -214,6 +156,7 @@ oneRoll
           k (Bread $ specialBreads V.! i, 5)
         pure (Bread Loaf, 1)
 
+breadRoll :: GenIO -> Account -> IO ([Item], Int)
 breadRoll g a@Account {prestigeLevel} = do
   n <- getRollCount g a
   (items, rewards) <- unzip <$> replicateM n (oneRoll g a)
@@ -225,7 +168,7 @@ breadRoll g a@Account {prestigeLevel} = do
 main :: IO ()
 main = do
   g <- createSystemRandom
-  let cnt = 1_000_000
+  let cnt = 10_000_000
   xs <- replicateM cnt do
     (_, r) <- breadRoll g testAccount
     pure r

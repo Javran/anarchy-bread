@@ -21,6 +21,7 @@ source-repository head
 
 library
   exposed-modules:
+      AnarchyBread.Types
       Lib
   other-modules:
       Paths_anarchy_bread
