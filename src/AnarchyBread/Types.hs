@@ -1,6 +1,7 @@
 module AnarchyBread.Types (
   Item (..),
   ShadowItem (..),
+  OneOfAKindItem (..),
   Bread (..),
   specialBreads,
   rareBreads,
@@ -17,15 +18,24 @@ data Item
   = Bread Bread
   | ChessPiece CColor Piece
   | Gem GColor
+  | Chessatron
+  | OmegaChessatron
   | ManyOfAKind
   | Shadow ShadowItem
+  | OneOfAKind OneOfAKindItem
   deriving (Show, Eq, Ord)
 
 data ShadowItem
   = ShadowOmega
   | ShadowGemGold
   | ShadowMoak
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum, Bounded)
+
+data OneOfAKindItem
+  = Anarchy
+  | HolyHell
+  | Horsey
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 data Bread
   = Loaf
@@ -37,13 +47,13 @@ data Bread
   | Doughnut
   | Bagel
   | Waffle
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 data CColor = Black | White
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 data Piece = Pawn | Knight | Bishop | Rook | Queen | King
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 data GColor
   = GRed
@@ -51,7 +61,7 @@ data GColor
   | GPurple
   | GGreen
   | GGold
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 specialBreads :: V.Vector Bread
 specialBreads = V.fromList [Croissant, Flatbread, StuffedFlatbread, Sandwich, FrenchBread]
