@@ -10,6 +10,8 @@ module AnarchyBread.Types (
   Piece (..),
   GColor (..),
   Account (..),
+  SubCmdContext,
+  SubCmd,
 ) where
 
 import qualified Data.Map.Strict as M
@@ -121,3 +123,7 @@ data Account = Account
   , prestigeLevel :: Int
   , gambitShop :: M.Map Item Int
   }
+
+type SubCmdContext = String
+
+type SubCmd = SubCmdContext -> IO ()

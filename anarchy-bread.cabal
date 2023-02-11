@@ -23,6 +23,7 @@ library
   exposed-modules:
       AnarchyBread.Emoji
       AnarchyBread.Main
+      AnarchyBread.Roll
       AnarchyBread.Types
   other-modules:
       Paths_anarchy_bread

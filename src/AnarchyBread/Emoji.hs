@@ -1,14 +1,18 @@
 module AnarchyBread.Emoji (
-  ) where
+  EItem,
+  mappings,
+) where
 
 import AnarchyBread.Types
 import qualified Data.Text as T
 
+type EItem = Either T.Text Item
+
 {-
   Mappings between Discord emojis and items.
  -}
-_mappings :: [(T.Text, Item)]
-_mappings =
+mappings :: [(T.Text, Item)]
+mappings =
   [ ("bread", Bread Loaf)
   , ("croissant", Bread Croissant)
   , ("flatbread", Bread Flatbread)
