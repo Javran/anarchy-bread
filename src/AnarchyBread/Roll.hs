@@ -11,8 +11,10 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Vector as V
 import Shower
+import System.Environment
 import System.Random.MWC
 import System.TimeIt (timeIt)
+import Text.Printf
 
 {-
   Regarding rolling one single item: it is done in the following order:
@@ -149,20 +151,32 @@ breadRoll g a@GAccount {prestigeLevel} = do
     , round @Double @Int $ fromIntegral (sum rewards) * (1 + 0.1 * fromIntegral prestigeLevel)
     )
 
-subCmd :: SubCmd
-subCmd _ = do
+simulateRolls :: Int -> Int -> IO ()
+simulateRolls n m = do
   account <- Account.loadFromEnv
   putStrLn "Using account config:"
   printer account
-  let cnt = m * n
-      n = 16
-      m = 4096
-  putStrLn $ "Rolling " <> show cnt <> " times ..."
+  let cnt = n * m
+  printf "Rolling with %d threads x%d = %d times ...\n" n m cnt
   tot <-
-    timeIt do
+    sum <$> do
       replicateConcurrently n do
         g <- createSystemRandom
         sum <$> replicateM m do
           (_, r) <- breadRoll g account
           pure r
-  print @Double (fromIntegral (sum tot) / fromIntegral cnt)
+  print @Double (fromIntegral tot / fromIntegral cnt)
+
+subCmd :: SubCmd
+subCmd cmdPrefix =
+  getArgs >>= \case
+    [] -> simulateRolls 16 65536
+    ["dev"] -> timeIt do simulateRolls 1 65536
+    [rawN, rawM]
+      | [(n, "")] <- reads rawN
+        , [(m, "")] <- reads rawM ->
+        simulateRolls n m
+    _ -> do
+      putStrLn $ cmdPrefix <> ": rolling with preset config"
+      putStrLn $ cmdPrefix <> " dev: rolling with a smaller count for fast development"
+      putStrLn $ cmdPrefix <> " <threads> <rolls per thread>"

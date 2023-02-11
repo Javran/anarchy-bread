@@ -15,7 +15,7 @@ main =
   getArgs >>= \case
     sc : args
       | Just handler <- lookup sc subCmdHandlers ->
-        withArgs args (handler sc)
+        withArgs args (handler ("<prog> " <> sc))
     _ ->
       forM_ subCmdHandlers $ \(sub, _) ->
         putStrLn $ "<prog> " <> sub <> " ..."
