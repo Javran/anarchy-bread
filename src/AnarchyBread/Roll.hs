@@ -191,7 +191,7 @@ simulateRolls n m = do
 subCmd :: SubCmd
 subCmd cmdPrefix =
   getArgs >>= \case
-    [] -> simulateRolls 16 65536
+    [] -> simulateRolls 16 262144
     ["dev"] -> timeIt do simulateRolls 1 65536
     [rawN, rawM]
       | [(n, "")] <- reads rawN
