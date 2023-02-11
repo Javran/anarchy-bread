@@ -61,6 +61,12 @@ getRollCount g GAccount {dailyRoll} =
         k r
       uniformR @Int (1, 10) g
 
+{-
+  TODO: general pattern is a range and a bound for testing generated random number.
+  we can probably compute all of those without random process involved so to allow
+  some more sharing (I suspect compiler is already floating stuff out, but
+  it's better that we do it manually)
+ -}
 oneRoll :: GenIO -> Account -> IO (Item, Int)
 oneRoll
   g
