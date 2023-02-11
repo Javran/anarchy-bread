@@ -65,6 +65,7 @@ library:
     - dhall
     - bifunctors
     - shower
+    - async
 
 executables:
   demo:

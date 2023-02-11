@@ -4,13 +4,14 @@ module AnarchyBread.Roll (
 
 import AnarchyBread.Account as Account
 import AnarchyBread.Types
+import Control.Concurrent.Async
 import Control.Monad.Cont
 import Control.Monad.Writer.CPS
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Vector as V
-import System.Random.MWC
 import Shower
+import System.Random.MWC
 
 {-
   Regarding rolling one single item: it is done in the following order:
@@ -152,10 +153,13 @@ subCmd _ = do
   account <- Account.loadFromEnv
   putStrLn "Using account config:"
   printer account
-  g <- createSystemRandom
-  let cnt = 10_000_000
+  let cnt = m * n
+      n = 128
+      m = 32768
   putStrLn $ "Rolling " <> show cnt <> " times ..."
-  xs <- replicateM cnt do
-    (_, r) <- breadRoll g account
-    pure r
-  print @Double (fromIntegral (sum xs) / fromIntegral cnt)
+  tot <- replicateConcurrently n do
+    sum <$> replicateM m do
+      g <- createSystemRandom
+      (_, r) <- breadRoll g account
+      pure r
+  print @Double (fromIntegral (sum tot) / fromIntegral cnt)

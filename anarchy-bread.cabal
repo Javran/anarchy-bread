@@ -71,7 +71,8 @@ library
       TypeSynonymInstances
   ghc-options: -Wall
   build-depends:
-      base
+      async
+    , base
     , bifunctors
     , bytestring
     , containers
