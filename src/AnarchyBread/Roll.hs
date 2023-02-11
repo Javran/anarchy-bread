@@ -111,14 +111,14 @@ oneRoll
         do
           cp <- uniformR @Int (1, 2048) g
           let whiteChance = case chessPieceEqualizer of
-                0 -> 0.25
-                1 -> 0.33
-                2 -> 0.42
-                3 -> 0.5
+                0 -> 25
+                1 -> 33
+                2 -> 42
+                3 -> 50
                 _ -> error $ "unknown cpe: " <> show chessPieceEqualizer
           when (cp <= luck) do
-            cr <- uniformR @Double (0, 1) g
-            let (color, reward) = if cr <= whiteChance then (White, 80) else (Black, 40)
+            cr <- uniformR @Int (0, 99) g
+            let (color, reward) = if cr < whiteChance then (White, 80) else (Black, 40)
             p <- uniformR @Int (0, 15) g
             let piece
                   | p <= 7 = Pawn
