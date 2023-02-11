@@ -32,7 +32,7 @@ import System.Random.MWC
  -}
 
 getRollCount :: GenIO -> Account -> IO Int
-getRollCount g Account {dailyRoll} =
+getRollCount g GAccount {dailyRoll} =
   runContT (callCC rollCount) pure
   where
     rollCount k = do
@@ -58,7 +58,7 @@ getRollCount g Account {dailyRoll} =
 
 testAccount :: Account
 testAccount =
-  Account
+  GAccount
     { loafConverter = 8
     , dailyRoll = 318
     , recipeRefinement = False
@@ -79,7 +79,7 @@ testAccount =
 oneRoll :: GenIO -> Account -> IO (Item, Int)
 oneRoll
   g
-  Account
+  GAccount
     { loafConverter
     , dailyRoll
     , moakBooster
@@ -158,7 +158,7 @@ oneRoll
         pure (Bread Loaf, 1)
 
 breadRoll :: GenIO -> Account -> IO ([Item], Int)
-breadRoll g a@Account {prestigeLevel} = do
+breadRoll g a@GAccount {prestigeLevel} = do
   n <- getRollCount g a
   (items, rewards) <- unzip <$> replicateM n (oneRoll g a)
   pure
