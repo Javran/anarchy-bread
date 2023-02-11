@@ -1,9 +1,13 @@
 module AnarchyBread.Emoji (
   EItem,
   mappings,
+  itemToEmoji,
+  emojiToEItem,
 ) where
 
 import AnarchyBread.Types
+import qualified Data.IntMap.Strict as IM
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 
 type EItem = Either T.Text Item
@@ -55,3 +59,22 @@ mappings =
           , (GGold, "gold")
           ]
       pure ("gem_" <> ct, Gem c)
+
+dItemToEmoji :: IM.IntMap T.Text
+dItemToEmoji =
+  IM.fromListWith
+    (error "duplicated keys in item -> emoji mappings")
+    $ fmap (\(e, i) -> (fromEnum i, e)) mappings
+
+dEmojiToItem :: M.Map T.Text Item
+dEmojiToItem =
+  M.fromListWith
+    (error "duplicated keys in emoji -> item mappings")
+    mappings
+
+itemToEmoji :: Item -> T.Text
+itemToEmoji = (dItemToEmoji IM.!) . fromEnum
+
+emojiToEItem :: T.Text -> EItem
+emojiToEItem raw =
+  maybe (Left raw) Right (dEmojiToItem M.!? raw)
