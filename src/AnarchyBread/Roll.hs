@@ -161,8 +161,8 @@ subCmd _ = do
   tot <-
     timeIt do
       replicateConcurrently n do
+        g <- createSystemRandom
         sum <$> replicateM m do
-          g <- createSystemRandom
           (_, r) <- breadRoll g account
           pure r
   print @Double (fromIntegral (sum tot) / fromIntegral cnt)
