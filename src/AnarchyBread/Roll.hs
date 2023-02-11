@@ -2,13 +2,14 @@ module AnarchyBread.Roll (
   subCmd,
 ) where
 
+import AnarchyBread.Account
+import AnarchyBread.Types
 import Control.Monad.Cont
 import Control.Monad.Writer.CPS
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Vector as V
 import System.Random.MWC
-import AnarchyBread.Types
 
 {-
   Regarding rolling one single item: it is done in the following order:

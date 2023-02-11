@@ -9,7 +9,6 @@ module AnarchyBread.Types (
   CColor (..),
   Piece (..),
   GColor (..),
-  Account (..),
   SubCmdContext,
   SubCmd,
 ) where
@@ -111,18 +110,6 @@ instance Enum Item where
 instance Bounded Item where
   minBound = V.head allItems
   maxBound = V.last allItems
-
-data Account = Account
-  { dailyRoll :: Int
-  , loafConverter :: Int
-  , recipeRefinement :: Bool
-  , moakBooster :: Int
-  , chessPieceEqualizer :: Int
-  , etherealShine :: Int
-  , inventory :: M.Map Item Int
-  , prestigeLevel :: Int
-  , gambitShop :: M.Map Item Int
-  }
 
 type SubCmdContext = String
 

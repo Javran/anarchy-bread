@@ -21,6 +21,7 @@ source-repository head
 
 library
   exposed-modules:
+      AnarchyBread.Account
       AnarchyBread.Emoji
       AnarchyBread.Main
       AnarchyBread.Roll
