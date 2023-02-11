@@ -1,4 +1,5 @@
 module AnarchyBread.Types (
+  universe,
   Item (..),
   ShadowItem (..),
   OneOfAKindItem (..),
