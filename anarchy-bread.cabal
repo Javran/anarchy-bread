@@ -74,6 +74,7 @@ library
       base
     , bytestring
     , containers
+    , dhall
     , mtl
     , mwc-random
     , text
