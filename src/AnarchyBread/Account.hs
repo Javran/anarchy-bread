@@ -5,7 +5,7 @@ module AnarchyBread.Account (
   Account,
   ItemCount (..),
   DhallAccount,
-  fromEnv,
+  loadFromEnv,
 ) where
 
 import AnarchyBread.Emoji
@@ -68,5 +68,5 @@ fromDhallAccount ga0 = do
       ga0
   pure $ first fromIntegral ga1
 
-fromEnv :: IO Account
-fromEnv = loadDhallFromEnv >>= fromDhallAccount
+loadFromEnv :: IO Account
+loadFromEnv = loadDhallFromEnv >>= fromDhallAccount
