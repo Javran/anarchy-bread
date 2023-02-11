@@ -12,6 +12,7 @@ import Data.Maybe
 import qualified Data.Vector as V
 import Shower
 import System.Random.MWC
+import System.TimeIt (timeIt)
 
 {-
   Regarding rolling one single item: it is done in the following order:
@@ -154,12 +155,14 @@ subCmd _ = do
   putStrLn "Using account config:"
   printer account
   let cnt = m * n
-      n = 128
-      m = 32768
+      n = 16
+      m = 4096
   putStrLn $ "Rolling " <> show cnt <> " times ..."
-  tot <- replicateConcurrently n do
-    sum <$> replicateM m do
-      g <- createSystemRandom
-      (_, r) <- breadRoll g account
-      pure r
+  tot <-
+    timeIt do
+      replicateConcurrently n do
+        sum <$> replicateM m do
+          g <- createSystemRandom
+          (_, r) <- breadRoll g account
+          pure r
   print @Double (fromIntegral (sum tot) / fromIntegral cnt)
