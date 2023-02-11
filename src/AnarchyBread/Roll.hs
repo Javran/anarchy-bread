@@ -9,9 +9,8 @@ import AnarchyBread.Types
 import Control.Concurrent.Async
 import Control.Monad.Cont
 import Control.Monad.Writer.CPS
-import qualified Data.Map.Strict as M
-import Data.Maybe
 import qualified Data.Vector as V
+import qualified Data.Vector.Unboxed as VU
 import Shower
 import System.Environment
 import System.Random.MWC
@@ -71,6 +70,9 @@ data RollPrecompute = RollPrecompute
   , whiteChance :: Int
   }
 
+getByItem :: VU.Unbox a => VU.Vector a -> Item -> a
+getByItem v i = VU.unsafeIndex v (fromEnum i)
+
 precompute :: Account -> RollPrecompute
 precompute
   GAccount
@@ -87,7 +89,7 @@ precompute
       moakRarityMult = round @Double $ fromIntegral dailyRoll / 10
       moakLuck = round @Double $ fromIntegral (loafConverter + 1) * (1.3 ^ moakBooster)
       countShadowGoldGem =
-        fromMaybe 0 $ inventory M.!? Shadow ShadowGemGold
+        getByItem inventory $ Shadow ShadowGemGold
       gemBoost = min (etherealShine * 10) countShadowGoldGem
       gemLuck =
         applyLuckBoost recipeRefinement $ loafConverter + 1 + gemBoost
@@ -111,8 +113,7 @@ oneRoll
     where
       _roll k = do
         (item, val) <- _rollBasic k
-        -- TODO: use vector
-        let extra = fromMaybe 0 $ gambitShop M.!? item
+        let extra = getByItem gambitShop item
         pure (item, val + extra)
       _rollBasic k = do
         -- rolling without taking into account ascension and gambit_shop

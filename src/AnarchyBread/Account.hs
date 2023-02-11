@@ -15,8 +15,10 @@ import Data.Bifunctor
 import Data.Bifunctor.TH
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import qualified Data.Vector.Unboxed as VU
 import Dhall
 import System.Environment
+import Data.Maybe
 
 data GAccount i m = GAccount
   { dailyRoll :: i
@@ -40,7 +42,10 @@ data ItemCount = ItemCount {item :: Text, count :: Natural}
 
 instance FromDhall ItemCount
 
-type Account = GAccount Int (M.Map Item Int)
+packFromMap :: M.Map Item Int -> VU.Vector Int
+packFromMap m = VU.generate (1 + fromEnum (maxBound :: Item)) (fromMaybe 0 . (m M.!?) . toEnum @Item)
+
+type Account = GAccount Int (VU.Vector Int)
 
 type DhallAccount = GAccount Natural [ItemCount]
 
@@ -66,7 +71,7 @@ fromDhallAccount ga0 = do
           pure ys
       )
       ga0
-  pure $ first fromIntegral ga1
+  pure $ bimap fromIntegral packFromMap ga1
 
 loadFromEnv :: IO Account
 loadFromEnv = loadDhallFromEnv >>= fromDhallAccount
