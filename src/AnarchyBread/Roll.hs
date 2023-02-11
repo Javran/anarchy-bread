@@ -35,7 +35,7 @@ import System.TimeIt (timeIt)
  -}
 
 getRollCount :: GenIO -> Account -> IO Int
-getRollCount g GAccount {dailyRoll} =
+getRollCount g Account {dailyRoll} =
   runContT (callCC rollCount) pure
   where
     rollCount k = do
@@ -62,7 +62,7 @@ getRollCount g GAccount {dailyRoll} =
 oneRoll :: GenIO -> Account -> IO (Item, Int)
 oneRoll
   g
-  GAccount
+  Account
     { loafConverter
     , dailyRoll
     , moakBooster
@@ -141,7 +141,7 @@ oneRoll
         pure (Bread Loaf, 1)
 
 breadRoll :: GenIO -> Account -> IO ([Item], Int)
-breadRoll g a@GAccount {prestigeLevel} = do
+breadRoll g a@Account {prestigeLevel} = do
   n <- getRollCount g a
   (items, rewards) <- unzip <$> replicateM n (oneRoll g a)
   pure

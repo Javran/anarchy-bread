@@ -1,72 +1,73 @@
-{-# LANGUAGE TemplateHaskell #-}
-
 module AnarchyBread.Account (
-  GAccount (..),
-  Account,
-  ItemCount (..),
-  DhallAccount,
+  Account (..),
   loadFromEnv,
 ) where
 
+import qualified AnarchyBread.Account.Dhall as DA
 import AnarchyBread.Emoji
 import AnarchyBread.Types
 import Control.Monad
-import Data.Bifunctor
-import Data.Bifunctor.TH
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Dhall
 import System.Environment
 
-data GAccount i m = GAccount
-  { dailyRoll :: i
-  , loafConverter :: i
+data Account = Account
+  { dailyRoll :: Int
+  , loafConverter :: Int
   , recipeRefinement :: Bool
-  , moakBooster :: i
-  , chessPieceEqualizer :: i
-  , etherealShine :: i
-  , inventory :: m
-  , prestigeLevel :: i
-  , gambitShop :: m
+  , moakBooster :: Int
+  , chessPieceEqualizer :: Int
+  , etherealShine :: Int
+  , inventory :: M.Map Item Int
+  , prestigeLevel :: Int
+  , gambitShop :: M.Map Item Int
   }
-  deriving (Functor, Show, Generic, Foldable, Traversable)
+  deriving (Show, Generic)
 
-$(deriveBifunctor ''GAccount)
-
-instance (FromDhall i, FromDhall m) => FromDhall (GAccount i m)
-
-data ItemCount = ItemCount {item :: Text, count :: Natural}
-  deriving (Generic, Show)
-
-instance FromDhall ItemCount
-
-type Account = GAccount Int (M.Map Item Int)
-
-type DhallAccount = GAccount Natural [ItemCount]
-
-fromItemCounts :: [ItemCount] -> (M.Map Item Int, [ItemCount])
+fromItemCounts :: [DA.ItemCount] -> (M.Map Item Int, [DA.ItemCount])
 fromItemCounts = foldMap go
   where
-    go ic@ItemCount {item = e, count} = case emojiToEItem e of
+    go ic@DA.ItemCount {DA.item = e, DA.count} = case emojiToEItem e of
       Left _ -> (mempty, [ic])
       Right i -> (M.singleton i (fromIntegral count), mempty)
 
-loadDhallFromEnv :: IO DhallAccount
+loadDhallFromEnv :: IO DA.Account
 loadDhallFromEnv =
   getEnv "ACCOUNT" >>= input auto . T.pack
 
-fromDhallAccount :: DhallAccount -> IO Account
-fromDhallAccount ga0 = do
-  ga1 <-
-    traverse
-      ( \xs -> do
+fromDhallAccount :: DA.Account -> IO Account
+fromDhallAccount
+  DA.Account
+    { DA.dailyRoll = dr
+    , DA.loafConverter = lc
+    , DA.recipeRefinement
+    , DA.moakBooster = mb
+    , DA.chessPieceEqualizer = cpe
+    , DA.etherealShine = es
+    , DA.inventory = iv
+    , DA.prestigeLevel = pl
+    , DA.gambitShop = gs
+    } = do
+    let convert xs = do
           let (ys, zs) = fromItemCounts xs
           unless (null zs) do
             putStrLn $ "Discarding unrecoginized ItemCounts: " <> show zs
           pure ys
-      )
-      ga0
-  pure $ first fromIntegral ga1
+    inventory <- convert iv
+    gambitShop <- convert gs
+    pure
+      Account
+        { dailyRoll = fromIntegral dr
+        , loafConverter = fromIntegral lc
+        , recipeRefinement
+        , moakBooster = fromIntegral mb
+        , chessPieceEqualizer = fromIntegral cpe
+        , etherealShine = fromIntegral es
+        , prestigeLevel = fromIntegral pl
+        , gambitShop
+        , inventory
+        }
 
 loadFromEnv :: IO Account
 loadFromEnv = loadDhallFromEnv >>= fromDhallAccount
