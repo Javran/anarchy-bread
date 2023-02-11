@@ -78,6 +78,7 @@ library
     , dhall
     , mtl
     , mwc-random
+    , shower
     , text
     , vector
     , writer-cps-mtl

@@ -1,3 +1,6 @@
 resolver: lts-19.20
 packages:
 - .
+
+extra-deps:
+- shower-0.2.0.3

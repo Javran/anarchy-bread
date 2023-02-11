@@ -2,15 +2,13 @@ module AnarchyBread.Main (
   main,
 ) where
 
-import AnarchyBread.Account as Account
 import qualified AnarchyBread.Roll as Roll
 import AnarchyBread.Types
 import Control.Monad
 import System.Environment
 
 devCmd :: SubCmd
-devCmd _ = do
-  print =<< Account.fromEnv
+devCmd _ = pure ()
 
 main :: IO ()
 main =

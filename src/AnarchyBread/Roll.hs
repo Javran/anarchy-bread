@@ -2,7 +2,7 @@ module AnarchyBread.Roll (
   subCmd,
 ) where
 
-import AnarchyBread.Account
+import AnarchyBread.Account as Account
 import AnarchyBread.Types
 import Control.Monad.Cont
 import Control.Monad.Writer.CPS
@@ -10,6 +10,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Vector as V
 import System.Random.MWC
+import Shower
 
 {-
   Regarding rolling one single item: it is done in the following order:
@@ -55,26 +56,6 @@ getRollCount g GAccount {dailyRoll} =
             11
         k r
       uniformR @Int (1, 10) g
-
-testAccount :: Account
-testAccount =
-  GAccount
-    { loafConverter = 8
-    , dailyRoll = 318
-    , recipeRefinement = False
-    , moakBooster = 1
-    , chessPieceEqualizer = 1
-    , etherealShine = 1
-    , inventory = M.singleton (Shadow ShadowGemGold) 20
-    , prestigeLevel = 2
-    , gambitShop =
-        M.fromList
-          [ (Bread Flatbread, 2)
-          , (Bread StuffedFlatbread, 2)
-          , (Bread Sandwich, 2)
-          , (Bread FrenchBread, 2)
-          ]
-    }
 
 oneRoll :: GenIO -> Account -> IO (Item, Int)
 oneRoll
@@ -168,9 +149,13 @@ breadRoll g a@GAccount {prestigeLevel} = do
 
 subCmd :: SubCmd
 subCmd _ = do
+  account <- Account.loadFromEnv
+  putStrLn "Using account config:"
+  printer account
   g <- createSystemRandom
   let cnt = 10_000_000
+  putStrLn $ "Rolling " <> show cnt <> " times ..."
   xs <- replicateM cnt do
-    (_, r) <- breadRoll g testAccount
+    (_, r) <- breadRoll g account
     pure r
   print @Double (fromIntegral (sum xs) / fromIntegral cnt)
