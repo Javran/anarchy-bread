@@ -5,12 +5,17 @@ module AnarchyBread.Main (
 import AnarchyBread.Emoji
 import qualified AnarchyBread.Roll as Roll
 import AnarchyBread.Types
+import AnarchyBread.Account
 import Control.Monad
+import Dhall
+import qualified Data.Text as T
 import System.Environment
 
 devCmd :: SubCmd
 devCmd _ = do
-  mapM_ print mappings
+  accountRaw <- getEnv "ACCOUNT"
+  z <- input auto (T.pack accountRaw) :: IO DhallAccount
+  print z
   pure ()
 
 main :: IO ()
