@@ -72,6 +72,7 @@ library
   ghc-options: -Wall
   build-depends:
       base
+    , bifunctors
     , bytestring
     , containers
     , dhall

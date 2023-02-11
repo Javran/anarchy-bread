@@ -2,21 +2,15 @@ module AnarchyBread.Main (
   main,
 ) where
 
-import AnarchyBread.Emoji
+import AnarchyBread.Account as Account
 import qualified AnarchyBread.Roll as Roll
 import AnarchyBread.Types
-import AnarchyBread.Account
 import Control.Monad
-import Dhall
-import qualified Data.Text as T
 import System.Environment
 
 devCmd :: SubCmd
 devCmd _ = do
-  accountRaw <- getEnv "ACCOUNT"
-  z <- input auto (T.pack accountRaw) :: IO DhallAccount
-  print z
-  pure ()
+  print =<< Account.fromEnv
 
 main :: IO ()
 main =

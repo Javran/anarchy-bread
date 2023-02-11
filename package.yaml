@@ -63,6 +63,7 @@ library:
     - writer-cps-mtl
     - vector
     - dhall
+    - bifunctors
 
 executables:
   demo:
