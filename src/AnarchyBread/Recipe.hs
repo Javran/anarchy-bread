@@ -39,7 +39,7 @@ pprAllRecipes = do
   forM_ (zip (universe @Item) $ V.toList allRecipes) \(i, rs) ->
     unless (null rs) do
       putStrLn $ "Target: " <> itemStr i <> ", " <> show (length rs) <> " recipes."
-      forM_ (zip [1 :: Int ..] rs) \(ir, comps) -> do
+      forM_ (zip [1 :: Int ..] (V.toList rs)) \(ir, comps) -> do
         let ppr (itm, cnt) = itemStr itm <> " x" <> show cnt
         putStrLn $ "- " <> show ir <> ": " <> intercalate ", " (toList $ fmap ppr comps)
 

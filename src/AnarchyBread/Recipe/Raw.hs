@@ -32,7 +32,7 @@ type Recipe = NE.NonEmpty (Item, Word)
 {-
   All recipes in the game, indexed by fromEnum of target Item.
  -}
-type AllRecipes = V.Vector [Recipe]
+type AllRecipes = V.Vector (V.Vector Recipe)
 
 intP :: (Integral i, Read i) => ReadP i
 intP = read <$> munch1 isDigit
@@ -78,7 +78,9 @@ allRecipes :: AllRecipes
 allRecipes = case readP_to_S (skipSpaces *> sepBy1 recipeChunkP (char '\n') <* skipSpaces <* eof) rawAllRecipes of
   [(vsPre :: [] (Item, [Recipe]), "")] ->
     let vs = (Chessatron, [chessatronRecipe]) : vsPre
-     in V.generate (1 + fromEnum (maxBound @Item)) (fromMaybe [] . (\k -> lookup k vs) . toEnum @Item)
+     in V.generate
+          (1 + fromEnum (maxBound @Item))
+          (maybe V.empty V.fromList . (\k -> lookup k vs) . toEnum @Item)
   _ -> error "parse error on rawAllRecipes"
   where
     chessatronRecipe :: Recipe
