@@ -84,7 +84,7 @@ allRecipes = case readP_to_S (skipSpaces *> sepBy1 recipeChunkP (char '\n') <* s
     chessatronRecipe :: Recipe
     chessatronRecipe = NE.fromList $ sortOn fst do
       c <- [Black, White]
-      (p, cnt) <- [(Pawn, 8), (Knight, 2), (Bishop, 2), (Rook, 2), (Queen, 2), (King, 2)]
+      (p, cnt) <- [(Pawn, 8), (Knight, 2), (Bishop, 2), (Rook, 2), (Queen, 1), (King, 1)]
       pure (ChessPiece c p, cnt)
 
 {-# INLINE rawAllRecipes #-}
