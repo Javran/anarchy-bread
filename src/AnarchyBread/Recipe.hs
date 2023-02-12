@@ -12,6 +12,26 @@ import AnarchyBread.Emoji
 import Data.List
 import Data.Foldable
 
+
+{-
+  TODO: find a way to craft chessatrons.
+
+  Z3 is possible but it might be too slow and fragile to handle the request.
+
+  We can instead try to impl a simple solver:
+
+  - For simplicity, it will only use recipe that consumes specials / rares / chess pieces,
+    but never those that uses gem or convert normal bread into special or rare.
+
+  - Assume a function that try to craft exactly X chessatrons,
+    on top of that we can binary search to find the maximum.
+
+  - For a specific target, remaining recipe are attempted in that order,
+    in a greedy manner - meet as much demand as possible with first recipe,
+    then move on to try next, and so on.
+
+ -}
+
 pprAllRecipes :: IO ()
 pprAllRecipes = do
   let itemStr v = ":" <> T.unpack (itemToEmoji v) <> ":"
