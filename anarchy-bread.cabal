@@ -87,6 +87,7 @@ library
     , timeit
     , vector
     , writer-cps-mtl
+    , z3
   default-language: Haskell2010
 
 executable demo

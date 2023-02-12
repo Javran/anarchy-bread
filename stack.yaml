@@ -4,3 +4,4 @@ packages:
 
 extra-deps:
 - shower-0.2.0.3
+- z3-408.2

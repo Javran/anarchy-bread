@@ -55,19 +55,20 @@ dependencies:
 library:
   source-dirs: src
   dependencies:
+    - async
+    - bifunctors
     - bytestring
     - containers
-    - text
-    - mwc-random
-    - mtl
-    - writer-cps-mtl
-    - vector
     - dhall
-    - bifunctors
-    - shower
-    - async
-    - timeit
+    - mtl
+    - mwc-random
     - raw-strings-qq
+    - shower
+    - text
+    - timeit
+    - vector
+    - writer-cps-mtl
+    - z3
 
 executables:
   demo:
