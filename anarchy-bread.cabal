@@ -24,6 +24,7 @@ library
       AnarchyBread.Account
       AnarchyBread.Emoji
       AnarchyBread.Main
+      AnarchyBread.Recipe
       AnarchyBread.Recipe.Raw
       AnarchyBread.Roll
       AnarchyBread.Types

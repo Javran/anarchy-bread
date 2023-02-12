@@ -2,14 +2,14 @@ module AnarchyBread.Main (
   main,
 ) where
 
+import AnarchyBread.Recipe
 import qualified AnarchyBread.Roll as Roll
 import AnarchyBread.Types
 import Control.Monad
 import System.Environment
-import AnarchyBread.Recipe.Raw
 
 devCmd :: SubCmd
-devCmd _ = print allRecipes
+devCmd _ = pprAllRecipes
 
 main :: IO ()
 main =
