@@ -3,15 +3,13 @@ module AnarchyBread.Recipe (
   pprAllRecipes,
 ) where
 
-import AnarchyBread.Recipe.Raw
-import AnarchyBread.Types
+import AnarchyBread.Emoji
+import AnarchyBread.Recipe.Filter
 import Control.Monad
+import Data.Foldable
+import Data.List
 import qualified Data.Text as T
 import qualified Data.Vector as V
-import AnarchyBread.Emoji
-import Data.List
-import Data.Foldable
-
 
 {-
   TODO: find a way to craft chessatrons.
@@ -32,15 +30,22 @@ import Data.Foldable
 
  -}
 
-pprAllRecipes :: IO ()
-pprAllRecipes = do
+pprRecipes :: RecipeSet -> IO ()
+pprRecipes rSet = do
   let itemStr v = ":" <> T.unpack (itemToEmoji v) <> ":"
-  putStrLn "Known recipes are as follows:"
-  forM_ (zip (universe @Item) $ V.toList allRecipes) \(i, rs) ->
-    unless (null rs) do
-      putStrLn $ "Target: " <> itemStr i <> ", " <> show (length rs) <> " recipes."
-      forM_ (zip [1 :: Int ..] (V.toList rs)) \(ir, comps) -> do
+  putStrLn "Selected recipes are as follows:"
+  forM_ (zip [0 ..] $ V.toList allRecipes) \(i, rs) -> do
+    let item = toEnum i
+        selectedIndices = rSet V.! i
+        selected = fmap (\j -> rs V.! j) selectedIndices
+    unless (null rs || null selected) do
+      putStrLn $ "Target: " <> itemStr item <> ", " <> show (length selected) <> " recipes."
+      forM_ (zip selectedIndices selected) \(ir, comps) -> do
         let ppr (itm, cnt) = itemStr itm <> " x" <> show cnt
-        putStrLn $ "- " <> show ir <> ": " <> intercalate ", " (toList $ fmap ppr comps)
+        putStrLn $ "/" <> show (ir + 1) <> ": " <> intercalate ", " (toList $ fmap ppr comps)
 
       putStrLn ""
+
+pprAllRecipes :: IO ()
+pprAllRecipes = do
+  pprRecipes normalGemRecipes

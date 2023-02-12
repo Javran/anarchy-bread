@@ -25,7 +25,10 @@ library
       AnarchyBread.Emoji
       AnarchyBread.Main
       AnarchyBread.Recipe
+      AnarchyBread.Recipe.Filter
       AnarchyBread.Recipe.Raw
+      AnarchyBread.Recipe.Types
+      AnarchyBread.Recipe.Z3
       AnarchyBread.Roll
       AnarchyBread.Types
   other-modules:

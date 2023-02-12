@@ -57,6 +57,9 @@ data CColor = Black | White
 data Piece = Pawn | Knight | Bishop | Rook | Queen | King
   deriving (Show, Eq, Ord, Enum, Bounded)
 
+{-
+  Gem colors, ordered from most common one to rarest.
+ -}
 data GColor
   = GRed
   | GBlue

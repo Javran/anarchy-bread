@@ -1,12 +1,15 @@
 {-# LANGUAGE QuasiQuotes #-}
 
 module AnarchyBread.Recipe.Raw (
-  Recipe,
-  AllRecipes,
   allRecipes,
 ) where
 
+{-
+  This module handles loading and parsing of all recipes from game.
+ -}
+
 import AnarchyBread.Emoji
+import AnarchyBread.Recipe.Types
 import AnarchyBread.Types
 import Control.Monad
 import Data.Char
@@ -17,21 +20,6 @@ import qualified Data.Text as T
 import qualified Data.Vector as V
 import Text.ParserCombinators.ReadP
 import Text.RawString.QQ
-
-{-
-  A Recipe should have the following (unchecked) properties:
-
-  - sorted by Item.
-  - no duplicated Item.
-  - Word > 0
-
- -}
-type Recipe = NE.NonEmpty (Item, Word)
-
-{-
-  All recipes in the game, indexed by fromEnum of target Item.
- -}
-type AllRecipes = V.Vector (V.Vector Recipe)
 
 intP :: (Integral i, Read i) => ReadP i
 intP = read <$> munch1 isDigit
