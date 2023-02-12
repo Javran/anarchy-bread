@@ -10,6 +10,7 @@ import AnarchyBread.Emoji
 import AnarchyBread.Types
 import Control.Monad
 import Data.Char
+import Data.List
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -75,8 +76,16 @@ recipeChunkP = do
 
 allRecipes :: AllRecipes
 allRecipes = case readP_to_S (skipSpaces *> sepBy1 recipeChunkP (char '\n') <* skipSpaces <* eof) rawAllRecipes of
-  [(vs :: [] (Item, [Recipe]), "")] -> V.generate (1 + fromEnum (maxBound @Item)) (fromMaybe [] . (\k -> lookup k vs) . toEnum @Item)
+  [(vsPre :: [] (Item, [Recipe]), "")] ->
+    let vs = (Chessatron, [chessatronRecipe]) : vsPre
+     in V.generate (1 + fromEnum (maxBound @Item)) (fromMaybe [] . (\k -> lookup k vs) . toEnum @Item)
   _ -> error "parse error on rawAllRecipes"
+  where
+    chessatronRecipe :: Recipe
+    chessatronRecipe = NE.fromList $ sortOn fst do
+      c <- [Black, White]
+      (p, cnt) <- [(Pawn, 8), (Knight, 2), (Bishop, 2), (Rook, 2), (Queen, 2), (King, 2)]
+      pure (ChessPiece c p, cnt)
 
 {-# INLINE rawAllRecipes #-}
 rawAllRecipes :: String
