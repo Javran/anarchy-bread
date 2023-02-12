@@ -67,6 +67,7 @@ library:
     - shower
     - async
     - timeit
+    - raw-strings-qq
 
 executables:
   demo:

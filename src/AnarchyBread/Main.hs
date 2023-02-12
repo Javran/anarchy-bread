@@ -6,9 +6,10 @@ import qualified AnarchyBread.Roll as Roll
 import AnarchyBread.Types
 import Control.Monad
 import System.Environment
+import AnarchyBread.Recipe.Raw
 
 devCmd :: SubCmd
-devCmd _ = pure ()
+devCmd _ = print allRecipes
 
 main :: IO ()
 main =

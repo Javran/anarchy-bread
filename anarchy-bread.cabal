@@ -24,6 +24,7 @@ library
       AnarchyBread.Account
       AnarchyBread.Emoji
       AnarchyBread.Main
+      AnarchyBread.Recipe.Raw
       AnarchyBread.Roll
       AnarchyBread.Types
   other-modules:
@@ -79,6 +80,7 @@ library
     , dhall
     , mtl
     , mwc-random
+    , raw-strings-qq
     , shower
     , text
     , timeit
