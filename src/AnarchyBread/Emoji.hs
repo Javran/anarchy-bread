@@ -40,7 +40,7 @@ mappings =
     <> gMappings
   where
     pMappings = do
-      (c, ct) <- [(Black, 'b'), (White, 'w')]
+      (c, ct) <- [(Black, 'B'), (White, 'W')]
       (p, pt) <-
         [ (Pawn, "pawn")
           , (Knight, "knight")
