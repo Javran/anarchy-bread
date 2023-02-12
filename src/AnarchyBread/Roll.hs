@@ -16,6 +16,9 @@ import System.Environment
 import System.Random.MWC
 import System.TimeIt (timeIt)
 import Text.Printf
+import Data.List
+import AnarchyBread.Emoji (itemToEmoji)
+import qualified Data.Text as T
 
 {-
   Regarding rolling one single item: it is done in the following order:
@@ -171,11 +174,20 @@ breadRoll g pre a@GAccount {prestigeLevel} = do
     , round @Double @Int $ fromIntegral (sum rewards) * (1 + 0.1 * fromIntegral prestigeLevel)
     )
 
+newtype ItemVec = ItemVec (VU.Vector Int)
+
+instance Show ItemVec where
+  show (ItemVec vs) = "[" <> intercalate "," (fmap ppr pairs) <> "]"
+    where
+      pairs :: [(Item, Int)]
+      pairs = filter ((/= 0) . snd) $ zip universe (VU.toList vs)
+      ppr (item, v) = (T.unpack . itemToEmoji $ item) <> " x" <> show v
+
 simulateRolls :: Int -> Int -> IO ()
 simulateRolls n m = do
   account <- Account.loadFromEnv
   putStrLn "Using account config:"
-  printer account
+  printer (fmap ItemVec account)
   let cnt = n * m
       pre = precompute account
   printf "Rolling with %d threads x%d = %d times ...\n" n m cnt
