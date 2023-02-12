@@ -13,7 +13,6 @@ import Data.Char
 import Data.List
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
-import Data.Maybe
 import qualified Data.Text as T
 import qualified Data.Vector as V
 import Text.ParserCombinators.ReadP
