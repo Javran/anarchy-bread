@@ -91,40 +91,70 @@ allRecipes = case readP_to_S (skipSpaces *> sepBy1 recipeChunkP (char '\n') <* s
 rawAllRecipes :: String
 rawAllRecipes =
   [r|
-There are 3 recipes for :Wpawn:.
+There are 2 recipes for :Bpawn:.
+[ 1 ]    1 :Wpawn:
+[ 2 ]    1 :gem_red:
+
+There are 2 recipes for :Bknight:.
+[ 1 ]    1 :Wknight:
+[ 2 ]    1 :gem_red:
+
+There are 2 recipes for :Bbishop:.
+[ 1 ]    1 :Wbishop:
+[ 2 ]    1 :gem_red:
+
+There are 2 recipes for :Brook:.
+[ 1 ]    1 :Wrook:
+[ 2 ]    1 :gem_red:
+
+There are 2 recipes for :Bqueen:.
+[ 1 ]    1 :Wqueen:
+[ 2 ]    1 :gem_red:
+
+There are 2 recipes for :Bking:.
+[ 1 ]    1 :Wking:
+[ 2 ]    1 :gem_red:
+
+There are 4 recipes for :Wpawn:.
 [ 1 ]    2 :Bpawn:,  10 :doughnut:,  10 :bagel:,  10 :waffle:
 [ 2 ]    2 :Bpawn:,  10 :croissant:,  10 :flatbread:,  10 :stuffed_flatbread:,  10 :sandwich:,  10 :french_bread:
 [ 3 ]    3 :Bpawn:
+[ 4 ]    1 :gem_red:
 
-There are 4 recipes for :Wknight:.
+There are 5 recipes for :Wknight:.
 [ 1 ]    1 :Bknight:,  50 :croissant:,  25 :bagel:
 [ 2 ]    2 :Bknight:,  50 :croissant:
 [ 3 ]    3 :Bknight:
 [ 4 ]    2 :Bknight:,  75 :bagel:
+[ 5 ]    1 :gem_red:
 
-There are 4 recipes for :Wbishop:.
+There are 5 recipes for :Wbishop:.
 [ 1 ]    1 :Bbishop:,  50 :french_bread:,  25 :doughnut:
 [ 2 ]    2 :Bbishop:,  50 :french_bread:
 [ 3 ]    3 :Bbishop:
 [ 4 ]    2 :Bbishop:,  75 :doughnut:
+[ 5 ]    1 :gem_red:
 
-There are 4 recipes for :Wrook:.
+There are 5 recipes for :Wrook:.
 [ 1 ]    1 :Brook:,  50 :sandwich:,  25 :waffle:
 [ 2 ]    2 :Brook:,  50 :sandwich:
 [ 3 ]    3 :Brook:
 [ 4 ]    2 :Brook:,  75 :waffle:
+[ 5 ]    1 :gem_red:
 
-There are 4 recipes for :Wqueen:.
+There are 5 recipes for :Wqueen:.
 [ 1 ]    1 :Bqueen:,  50 :stuffed_flatbread:,  25 :doughnut:
 [ 2 ]    2 :Bqueen:,  50 :stuffed_flatbread:
 [ 3 ]    3 :Bqueen:
 [ 4 ]    2 :Bqueen:,  75 :doughnut:
+[ 5 ]    1 :gem_red:
 
-There are 4 recipes for :Wking:.
+There are 5 recipes for :Wking:.
 [ 1 ]    1 :Bking:,  50 :flatbread:,  25 :bagel:
 [ 2 ]    2 :Bking:,  50 :flatbread:
 [ 3 ]    3 :Bking:
 [ 4 ]    2 :Bking:,  75 :bagel:
+[ 5 ]    1 :gem_red:
 
 There are 1 recipes for :gem_red:.
 [ 1 ]    1 :gem_blue:
