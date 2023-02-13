@@ -5,6 +5,7 @@ module AnarchyBread.Recipe.Filter (
   RecipeSet,
   isNormalGemRecipe,
   normalGemRecipes,
+  getRecipe,
 ) where
 
 import AnarchyBread.Recipe.Raw
@@ -26,6 +27,9 @@ apply rf = V.imap go allRecipes
       foldMap
         (\(j, rp) -> [j | rf (toEnum i) rp])
         (zip [0 ..] (V.toList rs))
+
+getRecipe :: Item -> Int -> Maybe Recipe
+getRecipe item ind = (V.!? ind) $ V.unsafeIndex allRecipes (fromEnum item)
 
 isNormalGemRecipe :: RecipeFilter
 isNormalGemRecipe dst srcs = case dst of

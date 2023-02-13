@@ -2,14 +2,15 @@ module AnarchyBread.Main (
   main,
 ) where
 
-import AnarchyBread.Recipe
 import qualified AnarchyBread.Roll as Roll
+import AnarchyBread.Recipe.Z3
+import AnarchyBread.Recipe.Filter
 import AnarchyBread.Types
 import Control.Monad
 import System.Environment
 
 devCmd :: SubCmd
-devCmd _ = pprAllRecipes
+devCmd _ = experiment normalGemRecipes
 
 main :: IO ()
 main =
