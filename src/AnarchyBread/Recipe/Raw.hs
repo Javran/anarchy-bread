@@ -8,33 +8,16 @@ module AnarchyBread.Recipe.Raw (
   This module handles loading and parsing of all recipes from game.
  -}
 
-import AnarchyBread.Emoji
+import AnarchyBread.Parse
 import AnarchyBread.Recipe.Types
 import AnarchyBread.Types
 import Control.Monad
-import Data.Char
 import Data.List
 import qualified Data.List.NonEmpty as NE
 import qualified Data.Map.Strict as M
-import qualified Data.Text as T
 import qualified Data.Vector as V
 import Text.ParserCombinators.ReadP
 import Text.RawString.QQ
-
-intP :: (Integral i, Read i) => ReadP i
-intP = read <$> munch1 isDigit
-
-itemP :: ReadP Item
-itemP = between (char ':') (char ':') do
-  {-
-    Ref: https://support.discord.com/hc/en-us/articles/360036479811-Custom-Emojis
-
-    > Emoji names must be at least 2 characters long and can only contain alphanumeric characters and underscores
-   -}
-  raw <- munch1 (\ch -> ch == '_' || isDigit ch || isAsciiLower ch || isAsciiUpper ch)
-  Right item <- pure $ emojiToEItem (T.pack raw)
-  _ <- void (char '~' *> intP @Int) <++ pure ()
-  pure item
 
 recipeLineP :: ReadP (Int, Recipe)
 recipeLineP = do

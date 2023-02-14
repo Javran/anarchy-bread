@@ -25,6 +25,7 @@ library
       AnarchyBread.Emoji
       AnarchyBread.Gold
       AnarchyBread.Main
+      AnarchyBread.Parse
       AnarchyBread.Recipe
       AnarchyBread.Recipe.Filter
       AnarchyBread.Recipe.Raw
