@@ -2,15 +2,22 @@ module AnarchyBread.Main (
   main,
 ) where
 
-import qualified AnarchyBread.Roll as Roll
-import AnarchyBread.Recipe.Z3
+import AnarchyBread.Account as Account
 import AnarchyBread.Recipe.Filter
+import AnarchyBread.Recipe.Z3
+import qualified AnarchyBread.Roll as Roll
 import AnarchyBread.Types
 import Control.Monad
+import qualified Data.Vector.Unboxed as VU
 import System.Environment
 
 devCmd :: SubCmd
-devCmd _ = experiment normalGemRecipes
+devCmd _ = do
+  GAccount {inventory} <- Account.loadFromEnv
+  experiment normalGemRecipes (getByItem inventory)
+
+getByItem :: VU.Unbox a => VU.Vector a -> Item -> a
+getByItem v i = VU.unsafeIndex v (fromEnum i)
 
 main :: IO ()
 main =

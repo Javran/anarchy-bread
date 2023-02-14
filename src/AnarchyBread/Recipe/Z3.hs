@@ -2,7 +2,6 @@ module AnarchyBread.Recipe.Z3 (
   experiment,
 ) where
 
-import AnarchyBread.Account as Account
 import AnarchyBread.Emoji
 import AnarchyBread.Recipe.Filter
 import AnarchyBread.Types
@@ -13,14 +12,10 @@ import Data.Foldable
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import qualified Data.Vector.Unboxed as VU
 import Z3.Monad
 
 -- Reference to a recipe
 type RecipeRef = (Item, Int)
-
-getByItem :: VU.Unbox a => VU.Vector a -> Item -> a
-getByItem v i = VU.unsafeIndex v (fromEnum i)
 
 type CostGain =
   ( {- cost -} [(RecipeRef, Int)]
@@ -46,8 +41,8 @@ computeCostGains rSet = M.fromListWith (<>) $ execWriter do
     forM_ srcs \(src, cnt) ->
       tell [(src, ([(ref, fromIntegral cnt)], mempty))]
 
-experiment :: RecipeSet -> IO ()
-experiment rSet = do
+experiment :: RecipeSet -> (Item -> Int) -> IO ()
+experiment rSet getItem = do
   let logic = Just QF_NIA
       refs :: [RecipeRef]
       refs = do
@@ -59,7 +54,6 @@ experiment rSet = do
   let costsAndGains = computeCostGains rSet
       itemsInvolved = M.keysSet costsAndGains
 
-  GAccount {inventory} <- Account.loadFromEnv
   result <- evalZ3With logic stdOpts do
     z <- mkInteger 0
     -- build up recipe use variables
@@ -77,7 +71,7 @@ experiment rSet = do
     let goldVar = itemOutVars M.! Gem GGold
     forM_ (M.toList costsAndGains) $ \(item, (costs, gains)) -> do
       let itemIn :: Integer
-          itemIn = fromIntegral (getByItem inventory item)
+          itemIn = fromIntegral (getItem item)
           outVar = itemOutVars M.! item
       orig <- mkInteger itemIn
       (totCost :: AST) <-
@@ -96,8 +90,8 @@ experiment rSet = do
       net <- mkAdd [orig, totCost, totGain]
       assert =<< mkEq outVar net
     let initCount :: Integer
-        initCount = fromIntegral $ getByItem inventory (Gem GGold)
-        initHi = initCount + fromIntegral (maximum (fmap (\i -> getByItem inventory i) (S.toList itemsInvolved)))
+        initCount = fromIntegral $ getItem (Gem GGold)
+        initHi = initCount + fromIntegral (maximum (fmap (\i -> getItem i) (S.toList itemsInvolved)))
         initRange :: (Integer, Integer)
         initRange = (initCount, initHi)
     ans <-
@@ -122,7 +116,7 @@ experiment rSet = do
     withModel \m -> do
       liftIO $ putStrLn "Inventory changes:"
       forM_ (zip (S.toAscList itemsInvolved) $ M.toAscList itemOutVars) \(item, (_, var)) -> do
-        let itemIn = getByItem inventory item
+        let itemIn = getItem item
         ~(Just v) <- evalInt m var
         liftIO $ putStrLn $ ":" <> T.unpack (itemToEmoji item) <> ": " <> show itemIn <> " -> " <> show v
 
