@@ -23,6 +23,7 @@ library
   exposed-modules:
       AnarchyBread.Account
       AnarchyBread.Emoji
+      AnarchyBread.Gold
       AnarchyBread.Main
       AnarchyBread.Recipe
       AnarchyBread.Recipe.Filter
