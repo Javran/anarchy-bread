@@ -16,10 +16,35 @@ import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as VU
 import Z3.Monad
 
+-- Reference to a recipe
 type RecipeRef = (Item, Int)
 
 getByItem :: VU.Unbox a => VU.Vector a -> Item -> a
 getByItem v i = VU.unsafeIndex v (fromEnum i)
+
+type CostGain =
+  ( {- cost -} [(RecipeRef, Int)]
+  , {- gain -} [(RecipeRef, Int)]
+  )
+
+{-
+  Rearranges recipe set in terms of items - for each item involved,
+  collect recipe, and how many of that item is invoved,
+  and whether item is on "cost" side or "gain" side of the recipe.
+ -}
+computeCostGains :: RecipeSet -> M.Map Item CostGain
+computeCostGains rSet = M.fromListWith (<>) $ execWriter do
+  let xs = do
+        (i, inds) <- zip [0 ..] (toList rSet)
+        let item = toEnum @Item i
+        j <- inds
+        Just srcs <- pure $ getRecipe item j
+        let ref = (item, j)
+        pure (ref, item, srcs)
+  forM_ xs \(ref, dst, srcs) -> do
+    tell [(dst, (mempty, [(ref, 1)]))]
+    forM_ srcs \(src, cnt) ->
+      tell [(src, ([(ref, fromIntegral cnt)], mempty))]
 
 experiment :: RecipeSet -> IO ()
 experiment rSet = do
@@ -31,35 +56,8 @@ experiment rSet = do
         j <- inds
         pure (item, j)
 
-  -- collect all items involved in this RecipeSet
-  let itemsInvolved = S.fromList do
-        (i, inds) <- zip [0 ..] (toList rSet)
-        let item = toEnum @Item i
-        j <- inds
-        Just r <- pure $ getRecipe item j
-        let srcItems = fmap fst $ toList r
-        item : srcItems
-
-  let costsAndGains ::
-        M.Map
-          Item
-          ( {- cost -}
-            [(RecipeRef, Int)]
-          , {- gain -}
-            [(RecipeRef, Int)]
-          )
-      costsAndGains = M.fromListWith (<>) $ execWriter do
-        let xs = do
-              (i, inds) <- zip [0 ..] (toList rSet)
-              let item = toEnum @Item i
-              j <- inds
-              Just srcs <- pure $ getRecipe item j
-              let ref = (item, j)
-              pure (ref, item, srcs)
-        forM_ xs \(ref, dst, srcs) -> do
-          tell [(dst, (mempty, [(ref, 1)]))]
-          forM_ srcs \(src, cnt) ->
-            tell [(src, ([(ref, fromIntegral cnt)], mempty))]
+  let costsAndGains = computeCostGains rSet
+      itemsInvolved = M.keysSet costsAndGains
 
   GAccount {inventory} <- Account.loadFromEnv
   result <- evalZ3With logic stdOpts do
@@ -101,7 +99,7 @@ experiment rSet = do
         initCount = fromIntegral $ getByItem inventory (Gem GGold)
         initHi = initCount + fromIntegral (maximum (fmap (\i -> getByItem inventory i) (S.toList itemsInvolved)))
         initRange :: (Integer, Integer)
-        initRange = (initCount , initHi)
+        initRange = (initCount, initHi)
     ans <-
       fix
         ( \go (lo, hi) -> do
