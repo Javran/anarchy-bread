@@ -42,7 +42,10 @@ computeCostGains rSet = M.fromListWith (<>) $ execWriter do
       tell [(src, ([(ref, fromIntegral cnt)], mempty))]
 
 experiment :: RecipeSet -> (Item -> Int) -> IO ()
-experiment rSet getItem = do
+experiment = maximizeItem (Gem GGold)
+
+maximizeItem :: Item -> RecipeSet -> (Item -> Int) -> IO ()
+maximizeItem goal rSet getItem = do
   let logic = Just QF_NIA
       refs :: [RecipeRef]
       refs = do
@@ -68,7 +71,7 @@ experiment rSet getItem = do
         v <- mkFreshIntVar (T.unpack (itemToEmoji item) <> "/out")
         assert =<< mkGe v z
         pure (item, v)
-    let goldVar = itemOutVars M.! Gem GGold
+    let goalVar = itemOutVars M.! goal
     forM_ (M.toList costsAndGains) $ \(item, (costs, gains)) -> do
       let itemIn :: Integer
           itemIn = fromIntegral (getItem item)
@@ -90,7 +93,7 @@ experiment rSet getItem = do
       net <- mkAdd [orig, totCost, totGain]
       assert =<< mkEq outVar net
     let initCount :: Integer
-        initCount = fromIntegral $ getItem (Gem GGold)
+        initCount = fromIntegral $ getItem goal
         initHi = initCount + fromIntegral (maximum (fmap (\i -> getItem i) (S.toList itemsInvolved)))
         initRange :: (Integer, Integer)
         initRange = (initCount, initHi)
@@ -102,9 +105,9 @@ experiment rSet getItem = do
               then pure lo
               else do
                 (_sat, r) <- local do
-                  assert =<< mkEq goldVar =<< mkInteger mid
+                  assert =<< mkEq goalVar =<< mkInteger mid
                   withModel \m -> do
-                    Just v <- evalInt m goldVar
+                    Just v <- evalInt m goalVar
                     pure v
                 case r of
                   Just _ -> go (mid, hi)
@@ -112,7 +115,7 @@ experiment rSet getItem = do
         )
         initRange
     s <- mkInteger ans
-    assert =<< mkEq s goldVar
+    assert =<< mkEq s goalVar
     withModel \m -> do
       liftIO $ putStrLn "Inventory changes:"
       forM_ (zip (S.toAscList itemsInvolved) $ M.toAscList itemOutVars) \(item, (_, var)) -> do
