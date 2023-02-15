@@ -1,4 +1,5 @@
 module AnarchyBread.Recipe.Z3 (
+  RecipeRef,
   experiment,
 ) where
 
@@ -6,7 +7,6 @@ import AnarchyBread.Emoji
 import AnarchyBread.Recipe.Filter
 import AnarchyBread.Types
 import Control.Monad
-import Control.Monad.IO.Class
 import Control.Monad.Writer.CPS
 import Data.Foldable
 import qualified Data.Map.Strict as M
@@ -41,10 +41,12 @@ computeCostGains rSet = M.fromListWith (<>) $ execWriter do
     forM_ srcs \(src, cnt) ->
       tell [(src, ([(ref, fromIntegral cnt)], mempty))]
 
-experiment :: RecipeSet -> (Item -> Int) -> IO ()
-experiment = maximizeItem (Gem GGold)
+type Solution = (M.Map Item (Integer, Integer), M.Map RecipeRef Integer)
 
-maximizeItem :: Item -> RecipeSet -> (Item -> Int) -> IO ()
+experiment :: RecipeSet -> (Item -> Int) -> IO (Maybe Solution)
+experiment rSet getItem = snd <$> maximizeItem (Gem GGold) rSet getItem
+
+maximizeItem :: Item -> RecipeSet -> (Item -> Int) -> IO (Result, Maybe Solution)
 maximizeItem goal rSet getItem = do
   let logic = Just QF_NIA
       refs :: [RecipeRef]
@@ -57,7 +59,7 @@ maximizeItem goal rSet getItem = do
   let costsAndGains = computeCostGains rSet
       itemsInvolved = M.keysSet costsAndGains
 
-  result <- evalZ3With logic stdOpts do
+  evalZ3With logic stdOpts do
     z <- mkInteger 0
     -- build up recipe use variables
     recipeUseVars <-
@@ -117,18 +119,15 @@ maximizeItem goal rSet getItem = do
     s <- mkInteger ans
     assert =<< mkEq s goalVar
     withModel \m -> do
-      liftIO $ putStrLn "Inventory changes:"
-      forM_ (zip (S.toAscList itemsInvolved) $ M.toAscList itemOutVars) \(item, (_, var)) -> do
-        let itemIn = getItem item
-        ~(Just v) <- evalInt m var
-        liftIO $ putStrLn $ ":" <> T.unpack (itemToEmoji item) <> ": " <> show itemIn <> " -> " <> show v
+      itemChanges :: (M.Map Item (Integer, Integer)) <-
+        M.fromList
+          <$> forM (M.toList itemOutVars) \(item, vOut) -> do
+            ~(Just cntOut) <- evalInt m vOut
+            pure (item, (fromIntegral (getItem item), cntOut))
+      recipeUses :: (M.Map RecipeRef Integer) <-
+        M.fromList
+          <$> forM (M.toList recipeUseVars) \(ref, var) -> do
+            ~(Just v) <- evalInt m var
+            pure (ref, v)
 
-      liftIO $ do
-        putStrLn ""
-        putStrLn "Recipe use:"
-      forM_ refs \ref@(item, i) -> do
-        let var = recipeUseVars M.! ref
-        ~(Just v) <- evalInt m var
-        liftIO $ putStrLn $ T.unpack (itemToEmoji item) <> "/" <> show (i + 1) <> " x" <> show v
-      pure ()
-  print result
+      pure (itemChanges, recipeUses)

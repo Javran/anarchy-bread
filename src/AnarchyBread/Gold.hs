@@ -3,12 +3,15 @@ module AnarchyBread.Gold (
 ) where
 
 import AnarchyBread.Account as Account
+import AnarchyBread.Emoji
 import AnarchyBread.Parse
 import AnarchyBread.Recipe.Filter
 import AnarchyBread.Recipe.Z3
 import AnarchyBread.Types
+import Control.Monad
 import qualified Data.Map.Strict as M
 import Data.Maybe
+import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as VU
 import System.Environment
 import System.Exit
@@ -23,12 +26,27 @@ discordGemLineP = many1 do
   item <- itemP <* skipSpaces
   pure (item, cnt)
 
+pprResult :: M.Map Item (Integer, Integer) -> M.Map RecipeRef Integer -> IO ()
+pprResult invChanges recipeUses =
+  do
+    putStrLn "Inventory changes:"
+    forM_ (M.toAscList invChanges) \(item, (cntIn, cntOut)) -> do
+      putStrLn $ ":" <> T.unpack (itemToEmoji item) <> ": " <> show cntIn <> " -> " <> show cntOut
+    putStrLn ""
+
+    putStrLn "Recipe use:"
+    forM_ (M.toAscList recipeUses) \((item, i), cnt) -> do
+      putStrLn $ T.unpack (itemToEmoji item) <> "/" <> show (i + 1) <> " x" <> show cnt
+
 subCmd :: SubCmd
 subCmd cmdPrefix =
   getArgs >>= \case
     ["account"] -> do
       GAccount {inventory} <- Account.loadFromEnv
-      experiment normalGemRecipes (getByItem inventory)
+      r <- experiment normalGemRecipes (getByItem inventory)
+      case r of
+        Nothing -> die "Solver failed"
+        Just (x, y) -> pprResult x y
     "parse" : args -> do
       let raw = unwords $ filter (/= ",") args
       case readP_to_S
@@ -42,7 +60,10 @@ subCmd cmdPrefix =
         [(vs, "")] -> do
           let m = M.fromList vs
               getItem = fromMaybe 0 . (m M.!?)
-          experiment normalGemRecipes getItem
+          r <- experiment normalGemRecipes getItem
+          case r of
+            Nothing -> die "Solver failed"
+            Just (x,y) -> pprResult x y
         r -> die $ "parse error, left: " <> show r
     args -> do
       putStrLn $ "Unknown: " <> show args
