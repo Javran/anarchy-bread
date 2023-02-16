@@ -9,6 +9,7 @@ module AnarchyBread.Types (
   CColor (..),
   Piece (..),
   GColor (..),
+  StonkType (..),
   SubCmdContext,
   SubCmd,
 ) where
@@ -25,7 +26,14 @@ data Item
   | ManyOfAKind
   | Shadow ShadowItem
   | OneOfAKind OneOfAKindItem
+  | Stonk StonkType
   deriving (Show, Eq, Ord)
+
+data StonkType
+  = Cookie
+  | Pretzel
+  | FortuneCookie
+  deriving (Show, Eq, Ord, Enum, Bounded)
 
 data ShadowItem
   = ShadowOmega
@@ -97,6 +105,7 @@ allItems = V.fromList do
     <> [Chessatron, OmegaChessatron, ManyOfAKind]
     <> fmap Shadow universe
     <> fmap OneOfAKind universe
+    <> fmap Stonk universe
   where
     chPieces = do
       c <- universe @CColor

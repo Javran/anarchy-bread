@@ -35,6 +35,9 @@ mappings =
   , ("anarchy", OneOfAKind Anarchy)
   , ("holy_hell", OneOfAKind HolyHell)
   , ("horsey", OneOfAKind Horsey)
+  , ("cookie", Stonk Cookie)
+  , ("pretzel", Stonk Pretzel)
+  , ("fortune_cookie", Stonk FortuneCookie)
   ]
     <> pMappings
     <> gMappings
