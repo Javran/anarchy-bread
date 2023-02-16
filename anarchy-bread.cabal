@@ -22,6 +22,7 @@ source-repository head
 library
   exposed-modules:
       AnarchyBread.Account
+      AnarchyBread.Chessatron
       AnarchyBread.Emoji
       AnarchyBread.Gold
       AnarchyBread.Main

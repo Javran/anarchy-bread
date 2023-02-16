@@ -38,12 +38,15 @@ pprResult invChanges recipeUses =
     forM_ (M.toAscList recipeUses) \((item, i), cnt) -> do
       putStrLn $ T.unpack (itemToEmoji item) <> "/" <> show (i + 1) <> " x" <> show cnt
 
+solveForGold :: (Item -> Int) -> IO (Maybe Solution)
+solveForGold getItem = maximizeItem (Gem GGold) normalGemRecipes getItem
+
 subCmd :: SubCmd
 subCmd cmdPrefix =
   getArgs >>= \case
     ["account"] -> do
       GAccount {inventory} <- Account.loadFromEnv
-      r <- experiment normalGemRecipes (getByItem inventory)
+      r <- solveForGold (getByItem inventory)
       case r of
         Nothing -> die "Solver failed"
         Just (x, y) -> pprResult x y
@@ -60,10 +63,10 @@ subCmd cmdPrefix =
         [(vs, "")] -> do
           let m = M.fromList vs
               getItem = fromMaybe 0 . (m M.!?)
-          r <- experiment normalGemRecipes getItem
+          r <- solveForGold getItem
           case r of
             Nothing -> die "Solver failed"
-            Just (x,y) -> pprResult x y
+            Just (x, y) -> pprResult x y
         r -> die $ "parse error, left: " <> show r
     args -> do
       putStrLn $ "Unknown: " <> show args

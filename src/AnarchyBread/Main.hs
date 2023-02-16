@@ -4,6 +4,7 @@ module AnarchyBread.Main (
 
 import qualified AnarchyBread.Gold as Gold
 import qualified AnarchyBread.Roll as Roll
+import qualified AnarchyBread.Chessatron as Chess
 import AnarchyBread.Types
 import Control.Monad
 import System.Environment
@@ -24,5 +25,6 @@ main =
     subCmdHandlers =
       [ ("roll", Roll.subCmd)
       , ("gold", Gold.subCmd)
+      , ("chess", Chess.subCmd)
       , ("_dev", devCmd)
       ]

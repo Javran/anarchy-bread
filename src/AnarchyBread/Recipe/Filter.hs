@@ -5,6 +5,8 @@ module AnarchyBread.Recipe.Filter (
   RecipeSet,
   isNormalGemRecipe,
   normalGemRecipes,
+  isNormalChessRecipe,
+  normalChessRecipes,
   getRecipe,
 ) where
 
@@ -35,8 +37,8 @@ isNormalGemRecipe :: RecipeFilter
 isNormalGemRecipe dst srcs = case dst of
   Gem cDst ->
     all
-      ( \(src, _) -> case src of
-          Gem cSrc -> cDst > cSrc
+      ( \case
+          (Gem cSrc, _) -> cDst > cSrc
           _ -> False
       )
       srcs
@@ -44,3 +46,24 @@ isNormalGemRecipe dst srcs = case dst of
 
 normalGemRecipes :: RecipeSet
 normalGemRecipes = apply isNormalGemRecipe
+
+isNormalChessRecipe :: RecipeFilter
+isNormalChessRecipe dst srcs = case dst of
+  ChessPiece {} ->
+    any
+      ( \case
+          (Gem _, _) -> False
+          _ -> True
+      )
+      srcs
+  Chessatron -> True
+  _ ->
+    all
+      ( \case
+          (Bread Loaf, _) -> True
+          _ -> False
+      )
+      srcs
+
+normalChessRecipes :: RecipeSet
+normalChessRecipes = apply isNormalChessRecipe
