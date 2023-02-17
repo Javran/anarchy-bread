@@ -13,7 +13,6 @@ import Data.Foldable
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Shower
 import Z3.Monad
 
 -- Reference to a recipe
@@ -92,7 +91,6 @@ maximizeItem goal rSet getItem =
     let costsAndGains = computeCostGains rSet
         itemsInvolved = M.keysSet costsAndGains
 
-    printer costsAndGains
     evalZ3With logic stdOpts do
       z <- mkInteger 0
       -- build up recipe use variables
@@ -189,28 +187,35 @@ maximizeItem goal rSet getItem =
           )
           initRange
       assert =<< mkEq goalVar =<< mkInteger ans
-      -- TODO: stop right here if we are not making more goal items.
+      {-
+        optimize recipe use, targeting minimal penalty.
+        note that we no longer have the monotonic property so
+        binary search can't be used, instead we just get current
+        penalty and see if we can force its value down repetitively.
+
+        TODO: evaluate if we need to limit # of iterations before aborting.
+        Z3 seems to be fragile when those repetitive loops are involved.
+       -}
       ~(Sat, Just initHiP) <- withModel \m -> do
         ~(Just p) <- evalInt m vPenalty
         pure p
-      let initRangeP = (0, initHiP)
-      ansP <-
+      (ansP, iterCount :: Int) <-
         fix
-          ( \go (lo, hi) -> do
-              let mid = quot (lo + hi) 2
-              if mid <= lo
-                then pure hi
-                else do
-                  (_sat, r) <- local do
-                    assert =<< mkEq vPenalty =<< mkInteger mid
+          ( \go cur cnt -> do
+              (_sat, r) <- local do
+                    assert =<< mkLt vPenalty =<< mkInteger cur
                     withModel \m -> do
                       Just v <- evalInt m vPenalty
                       pure v
-                  case r of
-                    Just _ -> go (lo, mid)
-                    Nothing -> go (mid, hi)
+              case r of
+                Just v -> go v (cnt + 1)
+                Nothing -> pure (cur, cnt)
           )
-          initRangeP
+          initHiP
+          0
+      liftIO $ do
+        putStrLn $ "Optimized after " <> show iterCount <> " iterations."
+        putStrLn $ "Penalty improvement (before, after): " <> show (initHiP, ansP)
       assert =<< mkEq vPenalty =<< mkInteger ansP
       withModel \m -> do
         itemChanges :: (M.Map Item (Integer, Integer)) <-
@@ -223,5 +228,4 @@ maximizeItem goal rSet getItem =
             <$> forM (M.toList recipeUseVars) \(ref, var) -> do
               ~(Just v) <- evalInt m var
               pure (ref, v)
-
         pure (itemChanges, recipeUses)
