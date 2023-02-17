@@ -13,8 +13,8 @@ import Data.Foldable
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
-import Z3.Monad
 import Shower
+import Z3.Monad
 
 -- Reference to a recipe
 type RecipeRef = (Item, Int)
@@ -44,6 +44,35 @@ computeCostGains rSet = M.fromListWith (<>) $ execWriter do
       tell [(src, ([(ref, fromIntegral cnt)], mempty))]
 
 type Solution = (M.Map Item (Integer, Integer), M.Map RecipeRef Integer)
+
+penalty :: Item -> Integer
+penalty = \case
+  Bread b -> case b of
+    Loaf -> 1
+    _ | elem b specialBreads -> 10
+    _ | elem b rareBreads -> 25
+    _ -> error $ "no category for " <> show b
+  ChessPiece c p ->
+    let cFac = case c of
+          Black -> 1
+          White -> 3
+        pFac = case p of
+          Pawn -> 100
+          Knight -> 400
+          Bishop -> 400
+          Rook -> 400
+          Queen -> 800
+          King -> 800
+     in cFac * pFac
+  Gem c ->
+    let n = 16384
+     in case c of
+          GRed -> n
+          GBlue -> n * 2
+          GPurple -> n * 4
+          GGreen -> n * 8
+          GGold -> n * 8 * 4
+  v -> error $ "should not appear on cost side of a recipe: " <> show v
 
 {-
   Unchecked assumption: goal item must be involved in at least one side
@@ -78,6 +107,10 @@ maximizeItem goal rSet getItem =
           v <- mkFreshIntVar (T.unpack (itemToEmoji item) <> "/out")
           assert =<< mkGe v z
           pure (item, v)
+      vPenalty <- do
+        v <- mkFreshIntVar "penalty"
+        assert =<< mkGe v z
+        pure v
       let goalVar = itemOutVars M.! goal
       forM_ (M.toList costsAndGains) $ \(item, (costs, gains)) -> do
         let itemIn = fromIntegral (getItem item)
@@ -99,6 +132,19 @@ maximizeItem goal rSet getItem =
 
         net <- mkAdd [orig, totCost, totGain]
         assert =<< mkEq outVar net
+      -- build penalty term.
+      do
+        xs <-
+          mkAdd =<< do
+            forM (M.toList costsAndGains) $ \(item, (costs, _)) -> do
+              pFac <- mkInteger (penalty item)
+              ys <- forM costs \(ref, cnt) -> do
+                let rVar = recipeUseVars M.! ref
+                cnt' <- mkInteger $ fromIntegral cnt
+                mkMul [rVar, pFac, cnt']
+              mkAdd ys
+        assert =<< mkEq vPenalty xs
+
       let initCount = fromIntegral $ getItem goal
           {-
             For all current recipes, exactly one item is produced, costing at least one item.
@@ -140,6 +186,29 @@ maximizeItem goal rSet getItem =
           )
           initRange
       assert =<< mkEq goalVar =<< mkInteger ans
+      -- TODO: stop right here if we are not making more goal items.
+      ~(Sat, Just initHiP) <- withModel \m -> do
+        ~(Just p) <- evalInt m vPenalty
+        pure p
+      let initRangeP = (0, initHiP)
+      ansP <-
+        fix
+          ( \go (lo, hi) -> do
+              let mid = quot (lo + hi) 2
+              if mid <= lo
+                 then pure hi
+                 else do
+                   (_sat, r) <- local do
+                     assert =<< mkEq vPenalty =<< mkInteger mid
+                     withModel \m -> do
+                       Just v <- evalInt m vPenalty
+                       pure v
+                   case r of
+                     Just _ -> go (lo, mid)
+                     Nothing -> go (mid, hi)
+          )
+          initRangeP
+      assert =<< mkEq vPenalty =<< mkInteger ansP
       withModel \m -> do
         itemChanges :: (M.Map Item (Integer, Integer)) <-
           M.fromList
