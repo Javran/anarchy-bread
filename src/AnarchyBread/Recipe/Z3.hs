@@ -13,6 +13,7 @@ import Data.Foldable
 import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Data.Text as T
+import System.IO
 import Z3.Monad
 
 -- Reference to a recipe
@@ -203,10 +204,10 @@ maximizeItem goal rSet getItem =
         fix
           ( \go cur cnt -> do
               (_sat, r) <- local do
-                    assert =<< mkLt vPenalty =<< mkInteger cur
-                    withModel \m -> do
-                      Just v <- evalInt m vPenalty
-                      pure v
+                assert =<< mkLt vPenalty =<< mkInteger cur
+                withModel \m -> do
+                  Just v <- evalInt m vPenalty
+                  pure v
               case r of
                 Just v -> go v (cnt + 1)
                 Nothing -> pure (cur, cnt)
@@ -214,8 +215,8 @@ maximizeItem goal rSet getItem =
           initHiP
           0
       liftIO $ do
-        putStrLn $ "Optimized after " <> show iterCount <> " iterations."
-        putStrLn $ "Penalty improvement (before, after): " <> show (initHiP, ansP)
+        hPutStrLn stderr $ "Optimized after " <> show iterCount <> " iterations."
+        hPutStrLn stderr $ "Penalty improvement (before, after): " <> show (initHiP, ansP)
       assert =<< mkEq vPenalty =<< mkInteger ansP
       withModel \m -> do
         itemChanges :: (M.Map Item (Integer, Integer)) <-
