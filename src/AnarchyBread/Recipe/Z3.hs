@@ -137,11 +137,14 @@ maximizeItem goal rSet getItem =
         xs <-
           mkAdd =<< do
             forM (M.toList costsAndGains) $ \(item, (costs, _)) -> do
-              pFac <- mkInteger (penalty item)
-              ys <- forM costs \(ref, cnt) -> do
-                let rVar = recipeUseVars M.! ref
-                cnt' <- mkInteger $ fromIntegral cnt
-                mkMul [rVar, pFac, cnt']
+              ys <- forM costs \(ref, cnt) ->
+                if cnt == 0
+                  then pure z
+                  else do
+                    pFac <- mkInteger (penalty item)
+                    let rVar = recipeUseVars M.! ref
+                    cnt' <- mkInteger $ fromIntegral cnt
+                    mkMul [rVar, pFac, cnt']
               mkAdd ys
         assert =<< mkEq vPenalty xs
 
@@ -196,16 +199,16 @@ maximizeItem goal rSet getItem =
           ( \go (lo, hi) -> do
               let mid = quot (lo + hi) 2
               if mid <= lo
-                 then pure hi
-                 else do
-                   (_sat, r) <- local do
-                     assert =<< mkEq vPenalty =<< mkInteger mid
-                     withModel \m -> do
-                       Just v <- evalInt m vPenalty
-                       pure v
-                   case r of
-                     Just _ -> go (lo, mid)
-                     Nothing -> go (mid, hi)
+                then pure hi
+                else do
+                  (_sat, r) <- local do
+                    assert =<< mkEq vPenalty =<< mkInteger mid
+                    withModel \m -> do
+                      Just v <- evalInt m vPenalty
+                      pure v
+                  case r of
+                    Just _ -> go (lo, mid)
+                    Nothing -> go (mid, hi)
           )
           initRangeP
       assert =<< mkEq vPenalty =<< mkInteger ansP
