@@ -85,6 +85,7 @@ library
     , bytestring
     , containers
     , dhall
+    , extra
     , mtl
     , mwc-random
     , raw-strings-qq

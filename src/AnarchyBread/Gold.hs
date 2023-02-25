@@ -9,6 +9,7 @@ import AnarchyBread.Recipe.Filter
 import AnarchyBread.Recipe.Z3
 import AnarchyBread.Types
 import Control.Monad
+import Data.Either.Extra (eitherToMaybe)
 import qualified Data.Map.Strict as M
 import Data.Maybe
 import qualified Data.Text as T
@@ -39,7 +40,7 @@ pprResult invChanges recipeUses =
       putStrLn $ T.unpack (itemToEmoji item) <> "/" <> show (i + 1) <> " x" <> show cnt
 
 solveForGold :: (Item -> Int) -> IO (Maybe Solution)
-solveForGold getItem = maximizeItem (Gem GGold) normalGemRecipes getItem
+solveForGold getItem = eitherToMaybe <$> maximizeItem (Gem GGold) normalGemRecipes getItem
 
 subCmd :: SubCmd
 subCmd cmdPrefix =

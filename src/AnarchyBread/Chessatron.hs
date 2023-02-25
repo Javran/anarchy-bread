@@ -8,6 +8,7 @@ import AnarchyBread.Recipe.Filter
 import AnarchyBread.Recipe.Z3
 import AnarchyBread.Types
 import Control.Monad
+import Data.Either.Extra (eitherToMaybe)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as VU
@@ -37,7 +38,7 @@ subCmd _cmdPrefix =
   getArgs >>= \case
     _ -> do
       GAccount {inventory} <- Account.loadFromEnv
-      r <- maximizeItem Chessatron normalChessRecipes (getByItem inventory)
+      r <- eitherToMaybe <$> maximizeItem Chessatron normalChessRecipes (getByItem inventory)
       case r of
         Nothing -> die "Solver failed"
         Just (x, y) -> pprResult x y
