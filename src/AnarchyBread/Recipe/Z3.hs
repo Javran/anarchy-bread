@@ -2,6 +2,7 @@ module AnarchyBread.Recipe.Z3 (
   RecipeRef,
   Solution,
   maximizeItem,
+  maximizeItemLim,
 ) where
 
 import AnarchyBread.Emoji
@@ -74,12 +75,29 @@ penalty = \case
           GGold -> n * 8 * 4
   v -> error $ "should not appear on cost side of a recipe: " <> show v
 
+maximizeItem :: Item -> RecipeSet -> (Item -> Int) -> IO (Maybe Solution)
+maximizeItem t r f = maximizeItemLim t r f Nothing
+
+{-
+  TODO: for now the limit is passed but not respected.
+
+  TODO: restrict the solver so that we never produce items more than we need.
+  would come in handy if we want to craft only a few chessatrons and save for later.
+
+  impl draft:
+  - modify binary search part to try with that amount once
+    + if satisfiable - we are done, can skip binary search
+    + if not, we have 2 unsatisfiable upperbounds we can choose from,
+      choose whichever that narrows the range.
+
+ -}
+
 {-
   Unchecked assumption: goal item must be involved in at least one side
   of a recipe.
  -}
-maximizeItem :: Item -> RecipeSet -> (Item -> Int) -> IO (Maybe Solution)
-maximizeItem goal rSet getItem =
+maximizeItemLim :: Item -> RecipeSet -> (Item -> Int) -> Maybe Int -> IO (Maybe Solution)
+maximizeItemLim goal rSet getItem _ =
   snd <$> do
     let logic = Just QF_NIA
         refs :: [RecipeRef]
