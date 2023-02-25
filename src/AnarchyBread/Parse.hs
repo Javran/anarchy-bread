@@ -32,7 +32,7 @@ eItemP = convert <$> rawEmojiP
       Right r -> emojiToEItem r
 
 mightBeEmoji :: Char -> Bool
-mightBeEmoji ch = (ord ch .&. 0xFF_000) == 0x1F_000
+mightBeEmoji ch = (ord ch .&. 0xFFF_000) == 0x1F_000
 
 {-
   Discord emoji is a mess and there are few possible ways for the same emoji:
