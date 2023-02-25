@@ -9,10 +9,11 @@ import AnarchyBread.Emoji
 import AnarchyBread.Recipe.Filter
 import AnarchyBread.Types
 import Control.Monad
+import Control.Monad.Except
 import Control.Monad.Writer.CPS
-import Data.Either.Extra (maybeToEither)
 import Data.Foldable
 import qualified Data.Map.Strict as M
+import Data.Maybe
 import qualified Data.Set as S
 import qualified Data.Text as T
 import System.IO
@@ -92,20 +93,31 @@ maximizeItem t r f = maximizeItemLim t r f Nothing
       choose whichever that narrows the range.
 
  -}
-{-
-  Unchecked assumption: goal item must be involved in at least one side
-  of a recipe.
- -}
 maximizeItemLim :: Item -> RecipeSet -> (Item -> Int) -> Maybe Int -> IO (Either String Solution)
-maximizeItemLim goal rSet getItem _ =
-  maybeToEither "Unsatisfiable"
-    . snd
-    <$> do
-      let logic = Just QF_NIA
-          costsAndGains = computeCostGains rSet
+maximizeItemLim goal rSet getItem _ = runExceptT do
+  let logic = Just QF_NIA
+      costsAndGains = computeCostGains rSet
+      goalCheck = do
+        {-
+          Checks that selected set of recipes is at least capable of
+          producing a positive amount of goal item.
 
-      evalZ3With logic stdOpts $ runModel goal rSet costsAndGains getItem
+          Passing this check also means that we have a non-empty set of recipes.
+         -}
+        (_, gs) <- costsAndGains M.!? goal
+        guard $ foldMap (Sum . snd) gs > 0
 
+  when (isNothing goalCheck) do
+    throwError "Goal item not produced by selected set of recipes."
+
+  (_, r) <- lift $ evalZ3With logic stdOpts $ runModel goal rSet costsAndGains getItem
+  case r of
+    Nothing -> throwError "Unsatisfiable."
+    Just v -> pure v
+
+{-
+  Note that this model works under the assumption that `costsAndGains` is non-empty.
+ -}
 runModel :: Item -> RecipeSet -> M.Map Item CostGain -> (Item -> Int) -> Z3 (Result, Maybe Solution)
 runModel goal rSet costsAndGains getItem = do
   let refs :: [RecipeRef]
