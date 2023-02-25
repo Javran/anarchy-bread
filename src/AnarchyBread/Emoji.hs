@@ -3,6 +3,7 @@ module AnarchyBread.Emoji (
   mappings,
   itemToEmoji,
   emojiToEItem,
+  unicodeEmojiItems,
 ) where
 
 import AnarchyBread.Types
@@ -81,3 +82,23 @@ itemToEmoji = (dItemToEmoji IM.!) . fromEnum
 emojiToEItem :: T.Text -> EItem
 emojiToEItem raw =
   maybe (Left raw) Right (dEmojiToItem M.!? raw)
+
+unicodeEmojiItems :: M.Map Char Item
+unicodeEmojiItems =
+  {-
+    Using `\XX` literals since formatter would otherwise experience trouble.
+   -}
+  M.fromList
+    [ ('\127838', Bread Loaf)
+    , ('\129369', Bread StuffedFlatbread)
+    , ('\129386', Bread Sandwich)
+    , ('\129747', Bread Flatbread)
+    , ('\129360', Bread Croissant)
+    , ('\129366', Bread FrenchBread)
+    , ('\127849', Bread Doughnut)
+    , ('\129479', Bread Waffle)
+    , ('\129391', Bread Bagel)
+    , ('\127850', Stonk Cookie)
+    , ('\129384', Stonk Pretzel)
+    , ('\129376', Stonk FortuneCookie)
+    ]
