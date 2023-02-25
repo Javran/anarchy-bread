@@ -2,6 +2,7 @@ module AnarchyBread.Parse (
   intP,
   itemP,
   rawEmojiP,
+  eItemP,
 ) where
 
 import AnarchyBread.Emoji
@@ -9,6 +10,7 @@ import AnarchyBread.Types
 import Control.Monad
 import Data.Bits
 import Data.Char
+import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Text.ParserCombinators.ReadP
 
@@ -16,16 +18,18 @@ intP :: (Integral i, Read i) => ReadP i
 intP = read <$> munch1 isDigit
 
 itemP :: ReadP Item
-itemP = between (char ':') (char ':') do
-  {-
-    Ref: https://support.discord.com/hc/en-us/articles/360036479811-Custom-Emojis
+itemP = do
+  Right v <- eItemP
+  pure v
 
-    > Emoji names must be at least 2 characters long and can only contain alphanumeric characters and underscores
-   -}
-  raw <- munch1 (\ch -> ch == '_' || isDigit ch || isAsciiLower ch || isAsciiUpper ch)
-  Right item <- pure $ emojiToEItem (T.pack raw)
-  _ <- void (char '~' *> intP @Int) <++ pure ()
-  pure item
+eItemP :: ReadP EItem
+eItemP = convert <$> rawEmojiP
+  where
+    convert = \case
+      Left ch -> case unicodeEmojiItems M.!? ch of
+        Just v -> Right v
+        Nothing -> Left $ T.singleton ch
+      Right r -> emojiToEItem r
 
 mightBeEmoji :: Char -> Bool
 mightBeEmoji ch = (ord ch .&. 0xFF_000) == 0x1F_000
