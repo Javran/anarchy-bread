@@ -110,21 +110,23 @@ maximizeItemLim goal rSet getItem lim = runExceptT do
   when (isNothing goalCheck) do
     throwError "Goal item not produced by selected set of recipes."
 
-  case lim of
-    Nothing -> pure ()
-    Just v -> when (v <= 0) do
-      throwError "Limit should be positive."
+  forM_ lim \v -> when (v <= 0) do
+    throwError "Limit should be positive."
 
-  (_, r) <- lift $ evalZ3With logic stdOpts $ runModel goal rSet costsAndGains getItem
+  (_, r) <- lift $ evalZ3With logic stdOpts $ runModel goal rSet costsAndGains getItem lim
   case r of
     Nothing -> throwError "Unsatisfiable."
     Just v -> pure v
 
 {-
-  Note that this model works under the assumption that `costsAndGains` is non-empty.
+  Note that this model works under few assumptions:
+
+  - `costsAndGains` is non-empty.
+  - `lim`, when given, is a positive number.
+
  -}
-runModel :: Item -> RecipeSet -> M.Map Item CostGain -> (Item -> Int) -> Z3 (Result, Maybe Solution)
-runModel goal rSet costsAndGains getItem = do
+runModel :: Item -> RecipeSet -> M.Map Item CostGain -> (Item -> Int) -> Maybe Int -> Z3 (Result, Maybe Solution)
+runModel goal rSet costsAndGains getItem _lim = do
   let refs :: [RecipeRef]
       refs = do
         (i, inds) <- zip [0 ..] (toList rSet)
@@ -187,18 +189,6 @@ runModel goal rSet costsAndGains getItem = do
           mkAdd ys
     assert =<< mkEq vPenalty xs
 
-  let initCount = fromIntegral $ getItem goal
-      {-
-        For all current recipes, exactly one item is produced, costing at least one item.
-        therefore it should be a safe assumption that whatever we can produce, it has to be
-        less than this amount.
-
-        Safety of using maximum is based on input assumption: it is only safe
-        when `itemsInvolved` is not empty.
-       -}
-      initHi = 1 + initCount + fromIntegral (maximum (fmap getItem (S.toList itemsInvolved)))
-      initRange :: (Integer, Integer)
-      initRange = (initCount, initHi)
   {-
     Z3 maximization is not very reliable for this model,
     instead we do our own binary search - range = (lo, hi) has the invariant that:
@@ -209,8 +199,25 @@ runModel goal rSet costsAndGains getItem = do
 
     we can maximize production by testing whether an exact amount is satisfiable.
 
+    In addition we choose to search on # of goal items possible rather than
+    recipe uses so that when there are multiple recipe that can directly produce
+    the goal items, we don't have to keep track all of them.
+
    -}
-  ans <-
+  ans <- do
+    let initCount = fromIntegral $ getItem goal
+        {-
+          For all current recipes, exactly one item is produced, costing at least one item.
+          therefore it should be a safe assumption that whatever we can produce, it has to be
+          less than this amount.
+
+          Safety of using maximum is based on input assumption: it is only safe
+          when `itemsInvolved` is not empty.
+         -}
+        initHi = 1 + initCount + fromIntegral (maximum (fmap getItem (S.toList itemsInvolved)))
+        initRange :: (Integer, Integer)
+        initRange = (initCount, initHi)
+
     fix
       ( \go (lo, hi) -> do
           let mid = quot (lo + hi) 2
@@ -227,7 +234,10 @@ runModel goal rSet costsAndGains getItem = do
                 Nothing -> go (lo, mid)
       )
       initRange
+
+  -- fix model to the best known result.
   assert =<< mkEq goalVar =<< mkInteger ans
+
   {-
     optimize recipe use, targeting minimal penalty.
     note that we no longer have the monotonic property so
