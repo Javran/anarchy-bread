@@ -94,7 +94,7 @@ maximizeItem t r f = maximizeItemLim t r f Nothing
 
  -}
 maximizeItemLim :: Item -> RecipeSet -> (Item -> Int) -> Maybe Int -> IO (Either String Solution)
-maximizeItemLim goal rSet getItem _ = runExceptT do
+maximizeItemLim goal rSet getItem lim = runExceptT do
   let logic = Just QF_NIA
       costsAndGains = computeCostGains rSet
       goalCheck = do
@@ -109,6 +109,11 @@ maximizeItemLim goal rSet getItem _ = runExceptT do
 
   when (isNothing goalCheck) do
     throwError "Goal item not produced by selected set of recipes."
+
+  case lim of
+    Nothing -> pure ()
+    Just v -> when (v <= 0) do
+      throwError "Limit should be positive."
 
   (_, r) <- lift $ evalZ3With logic stdOpts $ runModel goal rSet costsAndGains getItem
   case r of
