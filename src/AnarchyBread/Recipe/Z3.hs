@@ -252,21 +252,19 @@ runModel goal rSet costsAndGains getItem mUserLim = do
         lift $ liftIO $ hPutStrLn stderr $ "No need for search, limit " <> show v <> " is satisfiable."
         done v
 
-    let bSearch :: Z3 Integer
-        bSearch =
-          fix
-            ( \go (lo, hi) -> do
-                let mid = quot (lo + hi) 2
-                if mid <= lo
-                  then pure lo
-                  else
-                    checkGoalEq mid >>= \case
-                      Just _ -> go (mid, hi)
-                      Nothing -> go (lo, mid)
-            )
-            (goalIn, initHi)
-
-    lift bSearch
+    lift $
+      fix
+        ( \search lo hi -> do
+            let mid = quot (lo + hi) 2
+            if mid <= lo
+              then pure lo
+              else
+                checkGoalEq mid >>= \case
+                  Just _ -> search mid hi
+                  Nothing -> search lo mid
+        )
+        goalIn
+        initHi
 
   -- fix model to the best known result.
   assert =<< mkEq goalVar =<< mkInteger ans
