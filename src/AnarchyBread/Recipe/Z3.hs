@@ -81,19 +81,6 @@ penalty = \case
 maximizeItem :: Item -> RecipeSet -> (Item -> Int) -> IO (Either String Solution)
 maximizeItem t r f = maximizeItemLim t r f Nothing
 
-{-
-  TODO: for now the limit is passed but not respected.
-
-  TODO: restrict the solver so that we never produce items more than we need.
-  would come in handy if we want to craft only a few chessatrons and save for later.
-
-  impl draft:
-  - modify binary search part to try with that amount once
-    + if satisfiable - we are done, can skip binary search
-    + if not, we have 2 unsatisfiable upperbounds we can choose from,
-      choose whichever that narrows the range.
-
- -}
 maximizeItemLim :: Item -> RecipeSet -> (Item -> Int) -> Maybe Int -> IO (Either String Solution)
 maximizeItemLim goal rSet getItem lim = runExceptT do
   let logic = Just QF_NIA
@@ -127,7 +114,7 @@ maximizeItemLim goal rSet getItem lim = runExceptT do
 
  -}
 runModel :: Item -> RecipeSet -> M.Map Item CostGain -> (Item -> Int) -> Maybe Int -> Z3 (Result, Maybe Solution)
-runModel goal rSet costsAndGains getItem _lim = do
+runModel goal rSet costsAndGains getItem mUserLim = do
   let refs :: [RecipeRef]
       refs = do
         (i, inds) <- zip [0 ..] (toList rSet)
@@ -207,18 +194,6 @@ runModel goal rSet costsAndGains getItem _lim = do
    -}
   ans <- evalContT $ callCC \done -> do
     let goalIn = fromIntegral $ getItem goal
-        {-
-          For all current recipes, exactly one item is produced, costing at least one item.
-          therefore it should be a safe assumption that whatever we can produce, it has to be
-          less than this amount.
-
-          Safety of using maximum is based on input assumption: it is only safe
-          when `itemsInvolved` is not empty.
-         -}
-        initHi = 1 + goalIn + fromIntegral (maximum (fmap getItem (S.toList itemsInvolved)))
-        initRange :: (Integer, Integer)
-        initRange = (goalIn, initHi)
-
         checkGoalEq :: Integer -> Z3 (Maybe Integer)
         checkGoalEq vGoal = do
           (_sat, r) <- local do
@@ -244,17 +219,38 @@ runModel goal rSet costsAndGains getItem _lim = do
      -}
     let unsatGoal = 1 + goalIn + fromIntegral (maximum (fmap getItem (S.toList itemsInvolved)))
 
-    verifyUnsat <- lift do checkGoalEq unsatGoal
-    {-
-      In the impossible event that unsatGoal is satisfiable, we just forgo the whole search
-      process and declare this to be our result of optimization.
-      After all this *is* the upperbound of search space.
-     -}
-    forM_ verifyUnsat done
+    mLim :: Maybe Integer <- forM mUserLim \vPre -> do
+      -- note that vPre is the extra so we need to add original count (goalIn) to it.
+      let v = goalIn + fromIntegral vPre
+      -- don't trust user input, make sure it's capped at our calculated upperbound.
+      if v > unsatGoal
+        then do
+          lift $ liftIO $ hPutStrLn stderr $ "Adjusting upperbound from " <> show v <> " to " <> show unsatGoal <> "."
+          pure unsatGoal
+        else do
+          pure v
+
+    let initHi = case mLim of
+          Nothing -> unsatGoal
+          Just lim -> min unsatGoal lim
 
     {-
-      TODO: initHi should be based on unsatGoal and lim.
+      A final check before entering binary search. We want to make sure the upperbound
+      is indeed the unsatisfiable upperbound for binary search.
+
+      This might not be the case because:
+
+      - User might give an upperbound that is satisfiable.
+      - We might have miscalculated unsatGoal somehow (I don't it's likely though).
+
+      In either case, if initHi is satisfiable, we can forgo the whole search process
+      because upperbound of the search space is reachable.
      -}
+    lift (checkGoalEq initHi) >>= \case
+      Nothing -> pure ()
+      Just v -> do
+        lift $ liftIO $ hPutStrLn stderr $ "No need for search, limit " <> show v <> " is satisfiable."
+        done v
 
     let bSearch :: Z3 Integer
         bSearch =
@@ -268,7 +264,7 @@ runModel goal rSet costsAndGains getItem _lim = do
                       Just _ -> go (mid, hi)
                       Nothing -> go (lo, mid)
             )
-            initRange
+            (goalIn, initHi)
 
     lift bSearch
 
