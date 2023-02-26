@@ -10,6 +10,7 @@ import AnarchyBread.Recipe.Filter
 import AnarchyBread.Types
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.Trans.Cont
 import Control.Monad.Writer.CPS
 import Data.Foldable
 import qualified Data.Map.Strict as M
@@ -204,8 +205,8 @@ runModel goal rSet costsAndGains getItem _lim = do
     the goal items, we don't have to keep track all of them.
 
    -}
-  ans <- do
-    let initCount = fromIntegral $ getItem goal
+  ans <- evalContT $ callCC \done -> do
+    let goalIn = fromIntegral $ getItem goal
         {-
           For all current recipes, exactly one item is produced, costing at least one item.
           therefore it should be a safe assumption that whatever we can produce, it has to be
@@ -214,26 +215,62 @@ runModel goal rSet costsAndGains getItem _lim = do
           Safety of using maximum is based on input assumption: it is only safe
           when `itemsInvolved` is not empty.
          -}
-        initHi = 1 + initCount + fromIntegral (maximum (fmap getItem (S.toList itemsInvolved)))
+        initHi = 1 + goalIn + fromIntegral (maximum (fmap getItem (S.toList itemsInvolved)))
         initRange :: (Integer, Integer)
-        initRange = (initCount, initHi)
+        initRange = (goalIn, initHi)
 
-    fix
-      ( \go (lo, hi) -> do
-          let mid = quot (lo + hi) 2
-          if mid <= lo
-            then pure lo
-            else do
-              (_sat, r) <- local do
-                assert =<< mkEq goalVar =<< mkInteger mid
-                withModel \m -> do
-                  Just v <- evalInt m goalVar
-                  pure v
-              case r of
-                Just _ -> go (mid, hi)
-                Nothing -> go (lo, mid)
-      )
-      initRange
+        checkGoalEq :: Integer -> Z3 (Maybe Integer)
+        checkGoalEq vGoal = do
+          (_sat, r) <- local do
+            assert =<< mkEq goalVar =<< mkInteger vGoal
+            withModel \m -> do
+              Just v <- evalInt m goalVar
+              pure v
+          pure r
+
+    {-
+      We want an unsatisfiable upper bound to initiate the search.
+
+      Current observation is that, for all current recipes,
+      exactly one item is produced, costing at least one item.
+      Therefore it should be a safe assumption that whatever we can produce,
+      it has to be less than this amount.
+
+      Safety of using maximum is based on input assumption: it is only safe
+      when `itemsInvolved` is not empty.
+
+      Also +1 on top of all this - this is probably unnecessary but it's easier to argue
+      that we have an unsatisfiable upperbound this way.
+     -}
+    let unsatGoal = 1 + goalIn + fromIntegral (maximum (fmap getItem (S.toList itemsInvolved)))
+
+    verifyUnsat <- lift do checkGoalEq unsatGoal
+    {-
+      In the impossible event that unsatGoal is satisfiable, we just forgo the whole search
+      process and declare this to be our result of optimization.
+      After all this *is* the upperbound of search space.
+     -}
+    forM_ verifyUnsat done
+
+    {-
+      TODO: initHi should be based on unsatGoal and lim.
+     -}
+
+    let bSearch :: Z3 Integer
+        bSearch =
+          fix
+            ( \go (lo, hi) -> do
+                let mid = quot (lo + hi) 2
+                if mid <= lo
+                  then pure lo
+                  else
+                    checkGoalEq mid >>= \case
+                      Just _ -> go (mid, hi)
+                      Nothing -> go (lo, mid)
+            )
+            initRange
+
+    lift bSearch
 
   -- fix model to the best known result.
   assert =<< mkEq goalVar =<< mkInteger ans

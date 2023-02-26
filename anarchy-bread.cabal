@@ -92,6 +92,7 @@ library
     , shower
     , text
     , timeit
+    , transformers
     , vector
     , writer-cps-mtl
     , z3
