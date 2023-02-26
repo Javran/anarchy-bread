@@ -65,6 +65,7 @@ rawEmojiP =
         x : _ | isSpace x -> pure ch
         _ -> fail "not emoji"
 
+    -- to deal with Discord fuckery like <:holy_hell:123456>
     emojiP :: ReadP T.Text
     emojiP =
       between (char '<') (char '>') (eSimpP <* munch1 isDigit)
