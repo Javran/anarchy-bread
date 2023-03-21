@@ -5,10 +5,13 @@ module AnarchyBread.Roll (
 ) where
 
 import AnarchyBread.Account as Account
+import AnarchyBread.Emoji (itemToEmoji)
 import AnarchyBread.Types
 import Control.Concurrent.Async
 import Control.Monad.Cont
 import Control.Monad.Writer.CPS
+import Data.List
+import qualified Data.Text as T
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as VU
 import Shower
@@ -16,9 +19,6 @@ import System.Environment
 import System.Random.MWC
 import System.TimeIt (timeIt)
 import Text.Printf
-import Data.List
-import AnarchyBread.Emoji (itemToEmoji)
-import qualified Data.Text as T
 
 {-
   Regarding rolling one single item: it is done in the following order:
@@ -57,7 +57,11 @@ getRollCount g GAccount {dailyRoll} =
           fix
             ( \go cur -> do
                 b <- uniformM @Bool g
-                if b
+                {-
+                  11+ won't go beyond 99, presumably just a simple way
+                  to distinguish between lotto and 11+.
+                 -}
+                if b && cur < 99
                   then go (cur + 1)
                   else pure cur
             )
@@ -86,7 +90,8 @@ precompute
     , chessPieceEqualizer
     , etherealShine
     , inventory
-    } = RollPrecompute {..}
+    } =
+    RollPrecompute {..}
     where
       applyLuckBoost flag base = if flag then 4 * (base - 1) + 1 else base
       moakRarityMult = round @Double $ fromIntegral dailyRoll / 10
