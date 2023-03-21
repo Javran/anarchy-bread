@@ -109,6 +109,14 @@ precompute
         3 -> 50
         _ -> error $ "unknown cpe: " <> show chessPieceEqualizer
 
+applyLotto :: RollPrecompute -> RollPrecompute
+applyLotto rp@RollPrecompute {moakLuck, gemLuck, luck} =
+  rp
+    { moakLuck = moakLuck * 4
+    , gemLuck = gemLuck * 4
+    , luck = luck * 4
+    }
+
 oneRoll :: GenIO -> RollPrecompute -> Account -> IO (Item, Int)
 oneRoll
   g
@@ -171,8 +179,10 @@ oneRoll
         pure (Bread Loaf, 1)
 
 breadRoll :: GenIO -> RollPrecompute -> Account -> IO ([Item], Int)
-breadRoll g pre a@GAccount {prestigeLevel} = do
+breadRoll g preNorm a@GAccount {prestigeLevel} = do
+  let preLotto = applyLotto preNorm
   n <- getRollCount g a
+  let pre = if n >= 100 then preLotto else preNorm
   (items, rewards) <- unzip <$> replicateM n (oneRoll g pre a)
   pure
     ( items
