@@ -13,6 +13,7 @@ module AnarchyBread.Recipe.Filter (
 import AnarchyBread.Recipe.Raw
 import AnarchyBread.Recipe.Types
 import AnarchyBread.Types
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Vector as V
 
 type RecipeFilter = Item -> Recipe -> Bool
@@ -32,6 +33,9 @@ apply rf = V.imap go allRecipes
 
 getRecipe :: Item -> Int -> Maybe Recipe
 getRecipe item ind = (V.!? ind) $ V.unsafeIndex allRecipes (fromEnum item)
+
+isGemChessatronRecipe :: RecipeFilter
+isGemChessatronRecipe dst srcs = (dst, srcs) == (Chessatron, NE.singleton (Gem GRed, 16))
 
 isNormalGemRecipe :: RecipeFilter
 isNormalGemRecipe dst srcs = case dst of
@@ -56,7 +60,8 @@ isNormalChessRecipe dst srcs = case dst of
           _ -> True
       )
       srcs
-  Chessatron -> True
+  Chessatron ->
+    not (isGemChessatronRecipe dst srcs)
   _ ->
     all
       ( \case

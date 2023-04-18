@@ -47,17 +47,20 @@ recipeChunkP = do
 allRecipes :: AllRecipes
 allRecipes = case readP_to_S (skipSpaces *> sepBy1 recipeChunkP (char '\n') <* skipSpaces <* eof) rawAllRecipes of
   [(vsPre :: [] (Item, [Recipe]), "")] ->
-    let vs = (Chessatron, [chessatronRecipe]) : vsPre
+    let vs = (Chessatron, [chessatronRecipeNormal, chessatronRecipeGem]) : vsPre
      in V.generate
           (1 + fromEnum (maxBound @Item))
           (maybe V.empty V.fromList . (\k -> lookup k vs) . toEnum @Item)
   _ -> error "parse error on rawAllRecipes"
   where
-    chessatronRecipe :: Recipe
-    chessatronRecipe = NE.fromList $ sortOn fst do
+    chessatronRecipeNormal :: Recipe
+    chessatronRecipeNormal = NE.fromList $ sortOn fst do
       c <- [Black, White]
       (p, cnt) <- [(Pawn, 8), (Knight, 2), (Bishop, 2), (Rook, 2), (Queen, 1), (King, 1)]
       pure (ChessPiece c p, cnt)
+
+    chessatronRecipeGem :: Recipe
+    chessatronRecipeGem = NE.singleton (Gem GRed, 16)
 
 {-# INLINE rawAllRecipes #-}
 rawAllRecipes :: String

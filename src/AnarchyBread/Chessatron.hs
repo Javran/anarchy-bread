@@ -38,7 +38,8 @@ subCmd _cmdPrefix =
   getArgs >>= \case
     _ -> do
       GAccount {inventory} <- Account.loadFromEnv
-      r <- eitherToMaybe <$> maximizeItem Chessatron normalChessRecipes (getByItem inventory)
+      let rs = apply (\dst srcs -> dst /= OmegaChessatron && all ((/= ManyOfAKind) . fst) srcs)
+      r <- eitherToMaybe <$> maximizeItem Chessatron rs (getByItem inventory)
       case r of
         Nothing -> die "Solver failed"
         Just (x, y) -> pprResult x y
